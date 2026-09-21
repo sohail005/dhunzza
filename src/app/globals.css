@@ -130,6 +130,21 @@ input[type="range"]::-moz-range-thumb {
   animation: ken-burns 18s ease-in-out infinite alternate;
 }
 
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Liquid glass — frosted, translucent buttons with a specular top edge.
    Wrapped in @layer components so utility classes (e.g. `absolute`) that
    are applied alongside `.liquid-glass` still win in the cascade. */

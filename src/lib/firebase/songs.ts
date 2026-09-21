@@ -6,6 +6,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
@@ -90,6 +92,29 @@ export async function fetchSongsByCategory(categoryId: string): Promise<Song[]> 
 export async function fetchAllSongsOnce(): Promise<Song[]> {
   const snapshot = await getDocs(collection(db, "songs"));
   return snapshot.docs.map((docSnap) => mapSongDoc(docSnap.id, docSnap.data()));
+}
+
+/**
+ * Live-watches for songs uploaded after `sinceEpochMs`, firing `onNewSong`
+ * once per song as it appears — used to surface a "Recently Added" toast
+ * without polling. Returns an unsubscribe function.
+ */
+export function subscribeToNewSongs(
+  sinceEpochMs: number,
+  onNewSong: (song: Song) => void
+): () => void {
+  const q = query(
+    collection(db, "songs"),
+    where("createdAt", ">", Timestamp.fromMillis(sinceEpochMs)),
+    orderBy("createdAt", "asc")
+  );
+  return onSnapshot(q, (snapshot) => {
+    for (const change of snapshot.docChanges()) {
+      if (change.type === "added") {
+        onNewSong(mapSongDoc(change.doc.id, change.doc.data()));
+      }
+    }
+  });
 }
 
 /**

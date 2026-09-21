@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Music, Search, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, Trash2 } from "lucide-react";
 import type { Song } from "@/types/music";
-import { fetchSongThumbnail } from "@/lib/firebase/songs";
+import SongThumbnail from "@/components/SongThumbnail";
 
 interface SongTableProps {
   songs: Song[];
@@ -16,36 +16,6 @@ function formatDuration(seconds: number | null): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.round(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
-
-function SongThumbnail({ thumbnailPath }: { thumbnailPath: string | null }) {
-  const [src, setSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!thumbnailPath) {
-      setSrc(null);
-      return;
-    }
-    fetchSongThumbnail(thumbnailPath).then((dataUri) => {
-      if (!cancelled) setSrc(dataUri);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [thumbnailPath]);
-
-  if (!src) {
-    return (
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/40">
-        <Music size={14} />
-      </div>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element -- data: URI, not an optimizable remote/static asset
-    <img src={src} alt="" className="h-9 w-9 shrink-0 rounded-lg object-cover" />
-  );
 }
 
 export default function SongTable({ songs, isLoading, onDelete }: SongTableProps) {

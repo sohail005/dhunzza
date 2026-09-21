@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Song } from "@/types/music";
-import { fetchAllSongsOnce, fetchSongAudio } from "@/lib/firebase/songs";
+import { fetchAllSongsOnce, fetchSongAudio, subscribeToNewSongs } from "@/lib/firebase/songs";
 import NativeAudioPlayer, {
   type NativeAudioPlayerHandle,
 } from "@/components/player/NativeAudioPlayer";
@@ -21,9 +21,14 @@ const STORAGE_KEYS = {
   category: "dhunzza.current-category",
   volume: "dhunzza.volume",
   tunedIn: "dhunzza.has-tuned-in",
+  lastSeenSongAt: "dhunzza.last-seen-song-at",
 } as const;
 
 const DEFAULT_VOLUME = 80;
+// First-ever visit has no "last seen" bookmark yet, so it falls back to
+// surfacing whatever was uploaded within this window instead of the site's
+// entire upload history.
+const RECENTLY_ADDED_FALLBACK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
@@ -52,6 +57,8 @@ export interface PlayerContextValue {
   isMuted: boolean;
   queue: Song[];
   playbackUnavailable: boolean;
+  recentlyAdded: Song[];
+  newSongNotification: Song[];
 
   tuneIn: () => void;
   playQueue: (songs: Song[], category: CurrentCategory | null, startIndex?: number) => void;
@@ -63,6 +70,8 @@ export interface PlayerContextValue {
   seek: (seconds: number) => void;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
+  playRecentlyAddedSong: (song: Song) => void;
+  dismissNewSongNotification: () => void;
 }
 
 export const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -93,6 +102,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [volume, setVolumeState] = useState(DEFAULT_VOLUME);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackUnavailable, setPlaybackUnavailable] = useState(false);
+  // Full history of songs uploaded during this session (newest last) — kept
+  // around so already-surfaced songs aren't lost once the toast is cleared.
+  const [recentlyAdded, setRecentlyAdded] = useState<Song[]>([]);
+  // Subset of `recentlyAdded` not yet acknowledged (played or dismissed) —
+  // drives the sticky "Recently Added" toast. Newest is last.
+  const [newSongNotification, setNewSongNotification] = useState<Song[]>([]);
 
   const goToIndex = useCallback(
     async (nextQueue: Song[], index: number, autoplay: boolean) => {
@@ -210,6 +225,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     });
   }, [volume]);
 
+  // Plays a song surfaced by the "Recently Added" toast the same way any
+  // other song-select flow does (playQueue -> goToIndex), without losing
+  // the current queue: the song is moved to the front, autoplay replaces
+  // whatever was playing (this only runs from an explicit Play click).
+  const playRecentlyAddedSong = useCallback(
+    (song: Song) => {
+      setNewSongNotification((prev) => prev.filter((s) => s.id !== song.id));
+      const nextQueue = [song, ...queue.filter((s) => s.id !== song.id)];
+      playQueue(nextQueue, currentCategory, 0);
+    },
+    [queue, currentCategory, playQueue]
+  );
+
+  const dismissNewSongNotification = useCallback(() => {
+    setNewSongNotification([]);
+  }, []);
+
   // Restore playback preferences (but never auto-start audio). Restoring
   // the previous song is instant (from localStorage); falling back to a
   // fresh tune-in requires a Firestore round trip, so this effect is async.
@@ -265,6 +297,31 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
     })();
   }, [goToIndex]);
+
+  // Live-watch for songs uploaded since the user's last visit, surfacing
+  // them via the "Recently Added" toast — this fires both for anything
+  // already newer than the bookmark at load time and for songs uploaded
+  // while browsing. Never auto-plays — only updates state. The bookmark
+  // (newest createdAt seen) is persisted so the *next* session only shows
+  // what's new since then, instead of everything all over again.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const stored = Number(window.localStorage.getItem(STORAGE_KEYS.lastSeenSongAt));
+    const sinceEpochMs = stored > 0 ? stored : Date.now() - RECENTLY_ADDED_FALLBACK_WINDOW_MS;
+
+    const unsubscribe = subscribeToNewSongs(sinceEpochMs, (song) => {
+      setRecentlyAdded((prev) => (prev.some((s) => s.id === song.id) ? prev : [...prev, song]));
+      setNewSongNotification((prev) =>
+        prev.some((s) => s.id === song.id) ? prev : [...prev, song]
+      );
+      const prevSeen = Number(window.localStorage.getItem(STORAGE_KEYS.lastSeenSongAt)) || 0;
+      if (song.createdAt > prevSeen) {
+        window.localStorage.setItem(STORAGE_KEYS.lastSeenSongAt, String(song.createdAt));
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   // Only one browser tab should play audio at a time. When this tab starts
   // playing, tell other tabs of the same site to pause — but don't pause
@@ -449,6 +506,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       isMuted,
       queue,
       playbackUnavailable,
+      recentlyAdded,
+      newSongNotification,
       tuneIn,
       playQueue,
       play,
@@ -459,6 +518,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       seek,
       setVolume,
       toggleMute,
+      playRecentlyAddedSong,
+      dismissNewSongNotification,
     }),
     [
       currentSong,
@@ -473,6 +534,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       isMuted,
       queue,
       playbackUnavailable,
+      recentlyAdded,
+      newSongNotification,
       tuneIn,
       playQueue,
       play,
@@ -483,6 +546,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       seek,
       setVolume,
       toggleMute,
+      playRecentlyAddedSong,
+      dismissNewSongNotification,
     ]
   );
 
