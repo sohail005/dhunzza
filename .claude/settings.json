@@ -29,7 +29,9 @@
       "Bash(ls public/icons)",
       "Bash(node -e ' *)",
       "Bash(git mv *)",
-      "PowerShell(Rename-Item -Path \"D:\\\\Sohail_Projects\\\\desi.mahol\" -NewName \"dhunzza\" -ErrorAction Stop)"
+      "PowerShell(Rename-Item -Path \"D:\\\\Sohail_Projects\\\\desi.mahol\" -NewName \"dhunzza\" -ErrorAction Stop)",
+      "Bash(find .vercel -type f)",
+      "Bash(cat .vercel/project.json)"
     ]
   }
 }

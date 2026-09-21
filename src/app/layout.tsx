@@ -46,6 +46,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  verification: {
+    other: {
+      "google-adsense-account": "ca-pub-7274193441004898",
+    },
+  },
   robots: {
     index: true,
     follow: true,
