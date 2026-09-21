@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Dosis, Noto_Serif_Devanagari } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { PlayerProvider } from "@/context/PlayerContext";
 import AmbientBackground from "@/components/AmbientBackground";
@@ -110,6 +111,12 @@ export default function RootLayout({
   return (
     <html lang="hi" className={`${dosis.variable} ${notoSerifDevanagari.variable}`}>
       <body className="font-[family-name:var(--font-body)] antialiased">
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7274193441004898"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger -- static, hardcoded JSON-LD, not user input
