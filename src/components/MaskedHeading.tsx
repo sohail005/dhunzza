@@ -105,7 +105,21 @@ export default function MaskedHeading({
     if (!root || !measure) return;
     const s = settingsRef.current;
 
-    root.style.fontSize = `${clamp(root.clientWidth * s.textScale, 20, 200).toFixed(1)}px`;
+    let fontSize = clamp(root.clientWidth * s.textScale, 20, 200);
+    root.style.fontSize = `${fontSize.toFixed(1)}px`;
+
+    // Words wrap at spaces, but a single word can't break — if the widest
+    // one is wider than the container at this scale, it'll overflow.
+    // `measure` itself is a plain inline element (scrollWidth unreliable),
+    // so measure each `.masked-heading__word` (inline-block) directly.
+    const widestWord = wordRefs.current.reduce(
+      (max, el) => Math.max(max, el?.offsetWidth ?? 0),
+      0
+    );
+    if (widestWord > root.clientWidth && root.clientWidth > 0) {
+      fontSize = clamp((fontSize * root.clientWidth) / widestWord, 12, fontSize);
+      root.style.fontSize = `${fontSize.toFixed(1)}px`;
+    }
 
     const cs = window.getComputedStyle(measure);
     for (let i = 0; i < wordRefs.current.length; i += 1) {

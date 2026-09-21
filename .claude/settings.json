@@ -31,7 +31,21 @@
       "Bash(git mv *)",
       "PowerShell(Rename-Item -Path \"D:\\\\Sohail_Projects\\\\desi.mahol\" -NewName \"dhunzza\" -ErrorAction Stop)",
       "Bash(find .vercel -type f)",
-      "Bash(cat .vercel/project.json)"
+      "Bash(cat .vercel/project.json)",
+      "Bash(node -e \"console.log\\(require\\('playwright'\\)\\)\")",
+      "Bash(which chromium-cli *)",
+      "Read(//d//**)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Read(//c/Program Files \\(x86\\)/Google/Chrome/Application/**)",
+      "Read(//c/Program Files/Microsoft/Edge/Application/**)",
+      "Bash(node -e \"try{require.resolve\\('playwright-core'\\)}catch\\(e\\){console.log\\('missing'\\)}\")",
+      "Bash(node /tmp/pw-check/shot.js)",
+      "Bash(node \"/c/Users/ADMIN/AppData/Local/Temp/pw-check/shot.js\")",
+      "Bash(node \"/c/Users/ADMIN/AppData/Local/Temp/pw-check/diag.js\")"
+    ],
+    "additionalDirectories": [
+      "\\tmp\\pw-check",
+      "C:\\Users\\ADMIN\\AppData\\Local\\Temp\\pw-check"
     ]
   }
 }

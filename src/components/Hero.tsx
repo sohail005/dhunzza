@@ -148,7 +148,7 @@ export default function Hero() {
       )}
 
       <div className="relative z-10 flex flex-1 flex-col px-4 text-center sm:mt-30 sm:px-6">
-        <div className="liquid-glass-card mx-auto flex flex-col rounded-2xl px-5 py-4 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none sm:backdrop-blur-none">
+        <div className="mx-auto max-w-full flex flex-col rounded-2xl px-5 py-4 sm:px-0 sm:py-0">
           <MaskedHeading
             text="Dhunzza"
             tag="h1"
