@@ -21,7 +21,6 @@ const features = [
   },
 ];
 
-
 export default function AboutSection() {
   return (
     <section id="about" className="relative bg-transparent px-5 py-16 sm:px-8 sm:py-24">
