@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const SESSION_KEY = "desi-mahol.session-id";
+const SESSION_KEY = "dhunzza.session-id";
 const HEARTBEAT_INTERVAL_MS = 15_000;
 
 function getSessionId(): string {

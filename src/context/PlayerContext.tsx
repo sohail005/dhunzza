@@ -16,11 +16,11 @@ import NativeAudioPlayer, {
 } from "@/components/player/NativeAudioPlayer";
 
 const STORAGE_KEYS = {
-  song: "desi-mahol.current-song",
-  queue: "desi-mahol.queue",
-  category: "desi-mahol.current-category",
-  volume: "desi-mahol.volume",
-  tunedIn: "desi-mahol.has-tuned-in",
+  song: "dhunzza.current-song",
+  queue: "dhunzza.queue",
+  category: "dhunzza.current-category",
+  volume: "dhunzza.volume",
+  tunedIn: "dhunzza.has-tuned-in",
 } as const;
 
 const DEFAULT_VOLUME = 80;
@@ -272,7 +272,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return;
 
-    const channel = new BroadcastChannel("desi-mahol-player");
+    const channel = new BroadcastChannel("dhunzza-player");
     playbackChannelRef.current = channel;
 
     channel.onmessage = (event) => {
@@ -375,8 +375,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator) || !currentSong) return;
     navigator.mediaSession.metadata = new MediaMetadata({
       title: currentSong.title,
-      artist: currentSong.artist ?? "Desi Mahol",
-      album: currentSong.categoryName || "Desi Mahol",
+      artist: currentSong.artist ?? "Dhunzza",
+      album: currentSong.categoryName || "Dhunzza",
     });
   }, [currentSong]);
 

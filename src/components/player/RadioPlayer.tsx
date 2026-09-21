@@ -47,8 +47,8 @@ export default function RadioPlayer() {
 
   async function handleShare() {
     const shareData = {
-      title: "Desi Mahol",
-      text: "Desi Mahol — old Hindi songs, playing all day.",
+      title: "Dhunzza",
+      text: "Dhunzza — old Hindi songs, playing all day.",
       url: typeof window !== "undefined" ? window.location.origin : undefined,
     };
 

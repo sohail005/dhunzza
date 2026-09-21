@@ -27,7 +27,9 @@
       "Bash(powershell -Command \"Get-Command magick -ErrorAction SilentlyContinue\")",
       "Bash(cat public/manifest.webmanifest)",
       "Bash(ls public/icons)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(git mv *)",
+      "PowerShell(Rename-Item -Path \"D:\\\\Sohail_Projects\\\\desi.mahol\" -NewName \"dhunzza\" -ErrorAction Stop)"
     ]
   }
 }

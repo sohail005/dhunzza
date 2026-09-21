@@ -17,7 +17,7 @@ const features = [
     icon: InfinityIcon,
     title: "Always Open",
     description:
-      "Desi Mahol is free, streams straight from your browser, and never closes — no sign-up, no app.",
+      "Dhunzza is free, streams straight from your browser, and never closes — no sign-up, no app.",
   },
 ];
 
@@ -30,12 +30,12 @@ export default function AboutSection() {
           Welcome to
         </p>
         <h2 className="font-[family-name:var(--font-devanagari)] text-[32px] text-white sm:text-[50px]">
-          Desi Mahol — the Mood of Old Songs
+          Dhunzza — the Mood of Old Songs
         </h2>
         <p className="mt-6 text-[16px] leading-relaxed text-white/70 sm:text-[18px]">
-          Desi Mahol is a free ambient Hindi radio built to recreate one very specific
+          Dhunzza is a free ambient Hindi radio built to recreate one very specific
           feeling: an old shop radio left on in the background, playing timeless Hindi
-          songs while the day goes by. Press play, and Desi Mahol streams a nonstop,
+          songs while the day goes by. Press play, and Dhunzza streams a nonstop,
           shuffled mix of old Bollywood nostalgia.
         </p>
       </div>

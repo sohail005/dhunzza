@@ -13,11 +13,11 @@ const SESSION_ID_PATTERN = /^[a-zA-Z0-9-]{1,64}$/;
 
 declare global {
   // eslint-disable-next-line no-var
-  var __desiMaholPresence: Map<string, number> | undefined;
+  var __dhunzzaPresence: Map<string, number> | undefined;
 }
 
-const sessions = globalThis.__desiMaholPresence ?? new Map<string, number>();
-globalThis.__desiMaholPresence = sessions;
+const sessions = globalThis.__dhunzzaPresence ?? new Map<string, number>();
+globalThis.__dhunzzaPresence = sessions;
 
 function pruneAndCount(): number {
   const now = Date.now();

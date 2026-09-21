@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-const DEFAULT_IMAGE = "/images/desimahol3.webp";
+const DEFAULT_IMAGE = "/images/dhunzza3.webp";
 
 export default function AmbientBackground() {
   return (

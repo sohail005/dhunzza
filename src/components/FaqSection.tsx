@@ -1,16 +1,16 @@
 const faqs = [
   {
-    question: "What is Desi Mahol?",
+    question: "What is Dhunzza?",
     answer:
-      "Desi Mahol is a free ambient Hindi radio website that recreates the sound of an old shop radio — nonstop, timeless Hindi songs, shuffled and playing all day.",
+      "Dhunzza is a free ambient Hindi radio website that recreates the sound of an old shop radio — nonstop, timeless Hindi songs, shuffled and playing all day.",
   },
   {
-    question: "Is Desi Mahol free to use?",
+    question: "Is Dhunzza free to use?",
     answer:
-      "Yes. Desi Mahol streams entirely for free in your browser, with no sign-up required, on both desktop and mobile.",
+      "Yes. Dhunzza streams entirely for free in your browser, with no sign-up required, on both desktop and mobile.",
   },
   {
-    question: "What kind of music plays on Desi Mahol?",
+    question: "What kind of music plays on Dhunzza?",
     answer: "Old, evergreen Hindi songs organised into categories, so you can pick whatever fits the moment.",
   },
   {
@@ -35,7 +35,7 @@ export default function FaqSection() {
           FAQ
         </p>
         <h2 className="mb-10 text-center font-[family-name:var(--font-devanagari)] text-[32px] text-white sm:text-[38px]">
-          Desi Mahol, Explained
+          Dhunzza, Explained
         </h2>
 
         <div className="space-y-3">

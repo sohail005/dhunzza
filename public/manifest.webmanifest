@@ -1,6 +1,6 @@
 {
-  "name": "Desi Mahol",
-  "short_name": "Desi Mahol",
+  "name": "Dhunzza",
+  "short_name": "Dhunzza",
   "description": "Old songs. Pure desi vibes.",
   "start_url": "/",
   "display": "standalone",
@@ -20,7 +20,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/desi-mahol-icon.jpg",
+      "src": "/icons/dhunzza-icon.jpg",
       "sizes": "1264x1264",
       "type": "image/jpeg",
       "purpose": "any"

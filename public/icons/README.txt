@@ -1,4 +1,4 @@
-Desi Mahol app icons
+Dhunzza app icons
 =====================
 
 icon.svg is a placeholder mark used for the PWA manifest so the app is

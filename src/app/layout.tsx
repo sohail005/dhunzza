@@ -19,25 +19,22 @@ const notoSerifDevanagari = Noto_Serif_Devanagari({
   display: "swap",
 });
 
-const SITE_URL = "https://desimahol.vercel.app";
-const SITE_TITLE = "Desi Mahol — 90s Hindi Radio | Old Hindi Songs, Playing All Day";
+const SITE_URL = "https://dhunzza.vercel.app";
+const SITE_TITLE = "Dhunzza — 90s Hindi Radio | Old Hindi Songs, Playing All Day";
 const SITE_DESCRIPTION =
-  "Desi Mahol is a free nostalgic Hindi radio — nonstop old Bollywood songs, mood-based categories, and pure desi vibes, playing all day. Tap in and tune in to Desi Mahol.";
+  "Dhunzza is a free nostalgic Hindi radio — nonstop old Bollywood songs, mood-based categories, and pure desi vibes, playing all day. Tap in and tune in to Dhunzza.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_TITLE,
-    template: "%s | Desi Mahol",
+    template: "%s | Dhunzza",
   },
   description: SITE_DESCRIPTION,
-  applicationName: "Desi Mahol",
+  applicationName: "Dhunzza",
   keywords: [
-    "Desi Mahol",
-    "Desi Mahol radio",
-    "Mahol",
-    "Desi",
-    "Desim",
+    "Dhunzza",
+    "Dhunzza radio",
     "Hindi radio",
     "old Hindi songs",
     "90s Hindi songs",
@@ -60,24 +57,24 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/icons/icon.svg", type: "image/svg+xml" },
-      { url: "/icons/desi-mahol-icon.jpg", type: "image/jpeg" },
+      { url: "/icons/dhunzza-icon.jpg", type: "image/jpeg" },
     ],
-    apple: "/icons/desi-mahol-icon.jpg",
+    apple: "/icons/dhunzza-icon.jpg",
     shortcut: "/icons/icon.svg",
   },
   openGraph: {
     title: SITE_TITLE,
     description: "Old songs. Pure desi vibes. Timeless Hindi songs, playing all day.",
     url: SITE_URL,
-    siteName: "Desi Mahol",
+    siteName: "Dhunzza",
     type: "website",
     locale: "en_IN",
     images: [
       {
-        url: "/icons/desi-mahol-icon.jpg",
+        url: "/icons/dhunzza-icon.jpg",
         width: 1264,
         height: 1264,
-        alt: "Desi Mahol",
+        alt: "Dhunzza",
       },
     ],
   },
@@ -85,7 +82,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: "Old songs. Pure desi vibes. Timeless Hindi songs, playing all day.",
-    images: ["/icons/desi-mahol-icon.jpg"],
+    images: ["/icons/dhunzza-icon.jpg"],
   },
 };
 
@@ -98,8 +95,8 @@ export const viewport: Viewport = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "Desi Mahol",
-  alternateName: ["Desi", "Mahol", "Desim", "Desi Mahol Radio"],
+  name: "Dhunzza",
+  alternateName: ["Dhunzza Radio"],
   url: SITE_URL,
   description: SITE_DESCRIPTION,
   inLanguage: "hi",

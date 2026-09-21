@@ -2,11 +2,11 @@ import "server-only";
 
 declare global {
   // eslint-disable-next-line no-var
-  var __desiMaholRateLimitHits: Map<string, number[]> | undefined;
+  var __dhunzzaRateLimitHits: Map<string, number[]> | undefined;
 }
 
-const hits = globalThis.__desiMaholRateLimitHits ?? new Map<string, number[]>();
-globalThis.__desiMaholRateLimitHits = hits;
+const hits = globalThis.__dhunzzaRateLimitHits ?? new Map<string, number[]>();
+globalThis.__dhunzzaRateLimitHits = hits;
 
 /**
  * Simple in-memory sliding-window rate limiter, keyed by caller (usually an

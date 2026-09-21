@@ -84,7 +84,7 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-transparent px-4 py-8 text-white sm:px-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Desi Mahol Admin</h1>
+          <h1 className="text-xl font-semibold">Dhunzza Admin</h1>
           <button
             type="button"
             onClick={handleLogout}

@@ -1,7 +1,7 @@
-Desi Mahol image placeholders
+Dhunzza image placeholders
 ==============================
 
-public/images/desi-mahol-hero.webp does not exist yet. The homepage hero
+public/images/dhunzza-hero.webp does not exist yet. The homepage hero
 (src/components/Hero.tsx) renders a CSS-based placeholder composition
 instead of a broken <Image />, with a code comment showing exactly how to
 swap in a real illustration once one is available.
