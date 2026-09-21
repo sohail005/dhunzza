@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nohup npm run dev)",
+      "Bash(disown)",
+      "Bash(git push *)",
+      "Bash(git check-ignore *)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(read d *)",
+      "Bash(node -p 'require\\('\\\\''__TRACKED_VAR__/package.json'\\\\''\\).version')",
+      "Bash(git commit -m ' *)",
+      "Bash(NEXT_PUBLIC_FIREBASE_API_KEY=test NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=test.firebaseapp.com NEXT_PUBLIC_FIREBASE_PROJECT_ID=test NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://test-default-rtdb.firebaseio.com NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=1 NEXT_PUBLIC_FIREBASE_APP_ID=1:1:web:1 FIREBASE_ADMIN_PROJECT_ID=test FIREBASE_ADMIN_CLIENT_EMAIL=a@test.iam.gserviceaccount.com FIREBASE_ADMIN_PRIVATE_KEY=\"-----BEGIN PRIVATE KEY-----\\\\nMIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAtest\\\\n-----END PRIVATE KEY-----\\\\n\" ADMIN_EMAILS=admin@example.com npx next build)",
+      "Bash(find . -maxdepth 2 -iname \"*.rules*\" -o -maxdepth 2 -iname \"database.rules.json\")",
+      "Bash(grep -rl \"songsAudio\" --include=\"*.json\" .)",
+      "Bash(cat next.config.ts)",
+      "Bash(cat next.config.js)",
+      "Bash(cat next.config.mjs)",
+      "Bash(npx next *)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('database.rules.json'\\)\\); print\\('database.rules.json: valid JSON'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('database.rules.json','utf8'\\)\\); console.log\\('database.rules.json: valid JSON'\\)\")",
+      "Bash(node -e \"require.resolve\\('sharp'\\)\")",
+      "Bash(convert \"public/images/text-its-not-visible-properly.jpg\" -format \"%wx%h\" info:)",
+      "Bash(where magick *)",
+      "Bash(where convert.exe)",
+      "Bash(powershell -Command \"Get-Command magick -ErrorAction SilentlyContinue\")",
+      "Bash(cat public/manifest.webmanifest)",
+      "Bash(ls public/icons)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

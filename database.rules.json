@@ -1,0 +1,36 @@
+{
+  "rules": {
+    "songsAudio": {
+      "$songId": {
+        ".read": true,
+        ".write": "auth != null && auth.token.admin === true",
+        ".validate": "newData.hasChildren(['data', 'contentType'])",
+        "data": {
+          ".validate": "newData.isString() && newData.val().length <= 14000000"
+        },
+        "contentType": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "songsThumbnails": {
+      "$songId": {
+        ".read": true,
+        ".write": "auth != null && auth.token.admin === true",
+        ".validate": "newData.hasChildren(['data', 'contentType'])",
+        "data": {
+          ".validate": "newData.isString() && newData.val().length <= 5000000"
+        },
+        "contentType": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}
