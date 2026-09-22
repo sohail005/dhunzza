@@ -63,9 +63,9 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/dhunzza-logo-exact.svg", type: "image/svg+xml" },
-      { url: "/dhunza.webp", type: "image/webp" },
+      { url: "/dhunzza.webp", type: "image/webp" },
     ],
-    apple: "/dhunza.webp",
+    apple: "/dhunzza.webp",
     shortcut: "/dhunzza-logo-exact.svg",
   },
   openGraph: {
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     images: [
       {
-        url: "/dhunza.webp",
+        url: "/dhunzza.webp",
         width: 1254,
         height: 1254,
         alt: "Dhunzza",
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: "Old songs. Pure desi vibes. Timeless Hindi songs, playing all day.",
-    images: ["/dhunza.webp"],
+    images: ["/dhunzza.webp"],
   },
 };
 
@@ -117,7 +117,7 @@ const jsonLd = {
       name: "Dhunzza",
       alternateName: ["Dhunzza Radio"],
       url: SITE_URL,
-      logo: `${SITE_URL}/dhunza.webp`,
+      logo: `${SITE_URL}/dhunzza.webp`,
       // Once you have live social/profile URLs (Instagram, X, etc.), add a
       // `sameAs: [...]` array here — that's what teaches Google "Dhunzza"
       // is a distinct real-world entity, not a misspelling of a bigger,

@@ -14,6 +14,7 @@ import {
   fetchAllSongsOnce,
   fetchSongAudio,
   fetchSongsByEra,
+  fetchSongThumbnail,
   subscribeToNewSongs,
 } from "@/lib/firebase/songs";
 import NativeAudioPlayer, {
@@ -498,14 +499,43 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // Media Session: lock-screen / notification "Now Playing" controls. Also
   // signals to the OS that this tab is actively playing media, which is
   // what lets Android/iOS keep same-origin <audio> playback going when the
-  // app is backgrounded.
+  // app is backgrounded. Without an explicit `artwork` entry, Android/iOS
+  // show no icon at all on the lock screen — a bare title/artist isn't enough.
   useEffect(() => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator) || !currentSong) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentSong.title,
-      artist: currentSong.artist ?? "Dhunzza",
-      album: "Dhunzza",
-    });
+    let cancelled = false;
+
+    function setMetadata(artworkSrc: string, artworkType?: string) {
+      if (cancelled || !currentSong) return;
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentSong.title,
+        artist: currentSong.artist ?? "Dhunzza",
+        album: "Dhunzza",
+        artwork: [96, 192, 512].map((size) => ({
+          src: artworkSrc,
+          sizes: `${size}x${size}`,
+          type: artworkType,
+        })),
+      });
+    }
+
+    // Sensible default immediately; swapped for the song's own cover art
+    // (if any) once fetched, so the lock screen never shows a blank icon.
+    setMetadata(`${window.location.origin}/dhunzza.webp`, "image/webp");
+
+    if (currentSong.thumbnailPath) {
+      fetchSongThumbnail(currentSong.thumbnailPath)
+        .then((dataUri) => {
+          if (!dataUri) return;
+          const mimeMatch = /^data:([^;]+);/.exec(dataUri);
+          setMetadata(dataUri, mimeMatch?.[1]);
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentSong]);
 
   useEffect(() => {

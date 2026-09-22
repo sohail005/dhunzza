@@ -74,7 +74,7 @@ export default function RadioPlayer() {
 
   if (!hasTunedIn && !currentSong) {
     return (
-      <div className="absolute inset-x-3 top-[76%] z-40 -translate-y-1/2 sm:inset-x-6">
+      <div className="absolute inset-x-3 bottom-6 z-40 sm:inset-x-6 sm:top-[76%] sm:bottom-auto sm:-translate-y-1/2">
         <button
           type="button"
           onClick={tuneIn}
@@ -91,7 +91,7 @@ export default function RadioPlayer() {
     <div
       role="region"
       aria-label="Now playing"
-      className="absolute inset-x-3 top-[68%] z-40 -translate-y-1/2 sm:inset-x-6"
+      className="absolute inset-x-3 bottom-6 z-40 sm:inset-x-6 sm:top-[68%] sm:bottom-auto sm:-translate-y-1/2"
     >
       <div className="relative mx-auto flex w-full max-w-2xl flex-nowrap items-center justify-center gap-1 sm:flex-wrap sm:gap-2">
         <EraSelector className="w-auto shrink" />
