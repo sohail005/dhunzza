@@ -61,12 +61,20 @@ export const metadata: Metadata = {
     },
   },
   icons: {
+    // PNG/ICO listed first — Google's favicon crawler (and many other bots)
+    // don't reliably fetch SVG favicons, which is why search results were
+    // showing a generic icon instead of the actual logo.
     icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
       { url: "/dhunzza-logo-exact.svg", type: "image/svg+xml" },
-      { url: "/dhunzza.webp", type: "image/webp" },
     ],
-    apple: "/dhunzza.webp",
-    shortcut: "/dhunzza-logo-exact.svg",
+    apple: "/apple-touch-icon.png",
+    shortcut: "/favicon.ico",
   },
   openGraph: {
     title: SITE_TITLE,
