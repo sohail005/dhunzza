@@ -26,6 +26,20 @@ export function formatISTClock(date: Date = new Date()): string {
 }
 
 /**
+ * Formats a timestamp as a short local clock time, e.g. "12:26 am" — used
+ * for chat-style message timestamps (community request feed).
+ */
+export function formatShortTime(epochMs: number): string {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  })
+    .format(epochMs)
+    .toLowerCase();
+}
+
+/**
  * Formats seconds as m:ss (or h:mm:ss for long tracks).
  */
 export function formatDuration(seconds: number): string {

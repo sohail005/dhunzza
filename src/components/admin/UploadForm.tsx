@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import type { EraId, Mood, Song } from "@/types/music";
 import { MAX_UPLOAD_BYTES, uploadSong } from "@/lib/firebase/songs";
+import { fulfillMatchingSongRequests } from "@/lib/firebase/songRequestFulfillment";
 import { DEFAULT_ERA, ERAS, MOODS } from "@/lib/eras";
 
 interface UploadFormProps {
@@ -72,6 +73,10 @@ export default function UploadForm({ onUploaded, onToast }: UploadFormProps) {
       setArtist("");
       setMood("neutral");
       if (fileInputRef.current) fileInputRef.current.value = "";
+
+      // Best-effort — closes the loop on any pending chatbot request for
+      // this song. Never blocks or fails the upload itself.
+      fulfillMatchingSongRequests(song.title, song.id).catch(() => {});
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed.";
       setError(message);

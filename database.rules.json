@@ -19,6 +19,52 @@
         }
       }
     },
+    "songRequests": {
+      ".indexOn": ["normalizedSongName", "createdAt"],
+      "$requestId": {
+        ".read": "auth != null && auth.token.admin === true",
+        ".write": "auth != null && auth.token.admin === true",
+        ".validate": "newData.hasChildren(['songName', 'requesterName', 'normalizedSongName', 'createdAt', 'status', 'source']) && (!data.exists() || (newData.child('songName').val() == data.child('songName').val() && newData.child('requesterName').val() == data.child('requesterName').val() && newData.child('normalizedSongName').val() == data.child('normalizedSongName').val() && newData.child('createdAt').val() == data.child('createdAt').val() && newData.child('source').val() == data.child('source').val() && newData.child('sessionId').val() == data.child('sessionId').val()))",
+        "songName": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 150" },
+        "requesterName": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 60" },
+        "normalizedSongName": { ".validate": "newData.isString() && newData.val().length <= 150" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "status": { ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'reviewing' || newData.val() == 'approved' || newData.val() == 'rejected' || newData.val() == 'added')" },
+        "source": { ".validate": "newData.val() == 'chatbot'" },
+        "userId": { ".validate": "newData.val() == null || newData.isString()" },
+        "sessionId": { ".validate": "newData.val() == null || (newData.isString() && newData.val().length <= 64)" },
+        "songId": { ".validate": "newData.val() == null || newData.isString()" },
+        "reviewedAt": { ".validate": "newData.val() == null || newData.isNumber()" },
+        "reviewedBy": { ".validate": "newData.val() == null || newData.isString()" },
+        "adminNote": { ".validate": "newData.val() == null || (newData.isString() && newData.val().length <= 500)" },
+        "$other": { ".validate": false }
+      }
+    },
+    "chatSessions": {
+      "$sessionId": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren(['step', 'messagesJson', 'songName', 'requesterName', 'updatedAt'])",
+        "step": { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "messagesJson": { ".validate": "newData.isString() && newData.val().length <= 8000" },
+        "songName": { ".validate": "newData.isString() && newData.val().length <= 150" },
+        "requesterName": { ".validate": "newData.isString() && newData.val().length <= 60" },
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+    "publicRequestFeed": {
+      ".indexOn": ["createdAt"],
+      ".read": true,
+      "$eventId": {
+        ".write": false,
+        ".validate": "newData.hasChildren(['songName', 'requesterName', 'createdAt'])",
+        "songName": { ".validate": "newData.isString() && newData.val().length <= 150" },
+        "requesterName": { ".validate": "newData.isString() && newData.val().length <= 60" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
     "songsThumbnails": {
       "$songId": {
         ".read": true,

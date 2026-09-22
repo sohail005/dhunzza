@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, HelpCircle, Heart, Info, Menu, X } from "lucide-react";
+import { ChevronDown, HelpCircle, Heart, Info, Menu, Music, X } from "lucide-react";
 import { formatISTClock } from "@/lib/time";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
 import SupportModal from "@/components/SupportModal";
+import SongRequestChat from "@/components/song-request/SongRequestChat";
 import InstallAppButton from "@/components/InstallAppButton";
 import RadioPlayer from "@/components/player/RadioPlayer";
 import Image from "next/image";
@@ -39,6 +40,7 @@ export default function Hero() {
   const onlineCount = useOnlineCount();
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSongRequestOpen, setIsSongRequestOpen] = useState(false);
 
   return (
     <section className="relative flex min-h-screen w-full flex-col overflow-hidden">
@@ -68,6 +70,14 @@ export default function Hero() {
             FAQ
           </a>
           <InstallAppButton className={`${GLASS_LINK_DESKTOP_ONLY} gap-1.5`} />
+          <button
+            type="button"
+            onClick={() => setIsSongRequestOpen(true)}
+            className="liquid-glass liquid-glass-accent inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-semibold whitespace-nowrap text-white transition sm:px-4"
+          >
+            <Music size={13} />
+            Request a song
+          </button>
           <button
             type="button"
             onClick={() => setIsSupportOpen(true)}
@@ -116,6 +126,17 @@ export default function Hero() {
               onInstall={() => setIsMenuOpen(false)}
               className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-left font-semibold text-white transition hover:bg-white/10"
             />
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsSongRequestOpen(true);
+              }}
+              className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-left font-semibold text-white transition hover:bg-white/10"
+            >
+              <Music size={14} className="text-accent" />
+              Request a song
+            </button>
           </div>
         </>
       )}
@@ -153,6 +174,10 @@ export default function Hero() {
       {isSupportOpen && (
         <SupportModal onClose={() => setIsSupportOpen(false)} />
       )}
+
+      {/* Always mounted (visibility toggled via isOpen) so the in-progress
+          conversation survives closing and reopening the chat. */}
+      <SongRequestChat isOpen={isSongRequestOpen} onClose={() => setIsSongRequestOpen(false)} />
     </section>
   );
 }

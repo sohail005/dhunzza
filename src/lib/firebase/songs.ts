@@ -5,6 +5,7 @@ import {
   deleteDoc,
   doc,
   getCountFromServer,
+  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
@@ -85,6 +86,14 @@ export async function fetchSongCountsByEra(): Promise<Record<EraId, number>> {
 export async function fetchAllSongsOnce(): Promise<Song[]> {
   const snapshot = await getDocs(collection(db, "songs"));
   return snapshot.docs.map((docSnap) => mapSongDoc(docSnap.id, docSnap.data()));
+}
+
+/** Looks up a single song by id — used by the song-request chat's "Play"
+ * button on a "your song was added" notification, which only has the id. */
+export async function fetchSongById(songId: string): Promise<Song | null> {
+  const snapshot = await getDoc(doc(db, "songs", songId));
+  if (!snapshot.exists()) return null;
+  return mapSongDoc(snapshot.id, snapshot.data());
 }
 
 /**
