@@ -6,11 +6,16 @@ export interface NativeAudioPlayerHandle {
   load(src: string, autoplay: boolean): void;
   play(): void;
   pause(): void;
+  /** Ramps volume down to 0 over `durationMs` then pauses — used when a song is cut short by a skip/switch, instead of a hard stop. */
+  fadeOutAndPause(durationMs?: number): void;
   seekTo(seconds: number): void;
   setVolume(volume: number): void;
   getCurrentTime(): number;
   getDuration(): number;
 }
+
+const FADE_OUT_DURATION_MS = 350;
+const FADE_OUT_STEPS = 12;
 
 interface NativeAudioPlayerProps {
   onPlaying?: () => void;
@@ -29,11 +34,24 @@ interface NativeAudioPlayerProps {
 const NativeAudioPlayer = forwardRef<NativeAudioPlayerHandle, NativeAudioPlayerProps>(
   function NativeAudioPlayer({ onPlaying, onPaused, onEnded, onError }, ref) {
     const audioRef = useRef<HTMLAudioElement>(null);
+    // The user-configured volume (0-1), distinct from audio.volume while a
+    // fade-out is in progress — restored once the fade finishes so the next
+    // song starts at the right level instead of at 0.
+    const targetVolumeRef = useRef(1);
+    const fadeIntervalRef = useRef<number | null>(null);
+
+    function cancelFade() {
+      if (fadeIntervalRef.current === null) return;
+      window.clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
+    }
 
     useImperativeHandle(ref, () => ({
       load(src, autoplay) {
         const audio = audioRef.current;
         if (!audio) return;
+        cancelFade();
+        audio.volume = targetVolumeRef.current;
         audio.src = src;
         audio.load();
         if (autoplay) {
@@ -53,15 +71,36 @@ const NativeAudioPlayer = forwardRef<NativeAudioPlayerHandle, NativeAudioPlayerP
         });
       },
       pause() {
-        audioRef.current?.pause();
+        cancelFade();
+        const audio = audioRef.current;
+        if (audio) audio.volume = targetVolumeRef.current;
+        audio?.pause();
+      },
+      fadeOutAndPause(durationMs = FADE_OUT_DURATION_MS) {
+        const audio = audioRef.current;
+        if (!audio || audio.paused) return;
+        cancelFade();
+
+        const startVolume = audio.volume;
+        const stepMs = durationMs / FADE_OUT_STEPS;
+        let step = 0;
+        fadeIntervalRef.current = window.setInterval(() => {
+          step += 1;
+          audio.volume = Math.max(0, startVolume * (1 - step / FADE_OUT_STEPS));
+          if (step >= FADE_OUT_STEPS) {
+            cancelFade();
+            audio.pause();
+            audio.volume = targetVolumeRef.current;
+          }
+        }, stepMs);
       },
       seekTo(seconds) {
         if (audioRef.current) audioRef.current.currentTime = seconds;
       },
       setVolume(volume) {
-        if (audioRef.current) {
-          audioRef.current.volume = Math.min(100, Math.max(0, volume)) / 100;
-        }
+        const clamped = Math.min(100, Math.max(0, volume)) / 100;
+        targetVolumeRef.current = clamped;
+        if (audioRef.current) audioRef.current.volume = clamped;
       },
       getCurrentTime() {
         return audioRef.current?.currentTime ?? 0;

@@ -132,6 +132,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const normalizedIndex = ((index % nextQueue.length) + nextQueue.length) % nextQueue.length;
       const song = nextQueue[normalizedIndex];
 
+      // Cut the outgoing song immediately (fading, not a hard stop) —
+      // without this, the <audio> element keeps playing its old src for as
+      // long as fetchSongAudio() below takes, even though the UI already
+      // shows the new song loading.
+      audioHandleRef.current?.fadeOutAndPause();
+
       setCurrentTime(0);
       setDuration(0);
       setPlaybackUnavailable(false);
@@ -188,9 +194,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     (era: EraId) => {
       setIsTraveling(true);
       setTravelingToEra(era);
-      // Cut playback the instant the portal starts — the old era's song
-      // shouldn't keep playing under the transition.
-      audioHandleRef.current?.pause();
+      // Cut playback the instant the portal starts (fading, not a hard
+      // stop) — the old era's song shouldn't keep playing under the transition.
+      audioHandleRef.current?.fadeOutAndPause();
       setIsPlaying(false);
       (async () => {
         try {
