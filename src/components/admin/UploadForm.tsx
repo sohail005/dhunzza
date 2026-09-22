@@ -2,27 +2,26 @@
 
 import { useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
-import type { Category, Song } from "@/types/music";
+import type { EraId, Mood, Song } from "@/types/music";
 import { MAX_UPLOAD_BYTES, uploadSong } from "@/lib/firebase/songs";
-import CategoryManager from "@/components/admin/CategoryManager";
+import { DEFAULT_ERA, ERAS, MOODS } from "@/lib/eras";
 
 interface UploadFormProps {
-  categories: Category[];
   onUploaded: (song: Song) => void;
   onToast: (message: string, kind: "success" | "error") => void;
-  createCategory: (name: string) => Promise<Category>;
 }
 
-export default function UploadForm({
-  categories,
-  onUploaded,
-  onToast,
-  createCategory,
-}: UploadFormProps) {
+function formatFileSize(bytes: number): string {
+  const mb = bytes / (1024 * 1024);
+  return `${mb.toFixed(mb < 10 ? 2 : 1)} MB`;
+}
+
+export default function UploadForm({ onUploaded, onToast }: UploadFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [era, setEra] = useState<EraId>(DEFAULT_ERA);
+  const [mood, setMood] = useState<Mood>("neutral");
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,11 +42,6 @@ export default function UploadForm({
     if (!title) setTitle(candidate.name.replace(/\.[^/.]+$/, ""));
   }
 
-  async function handleCreateCategory(name: string) {
-    const category = await createCategory(name);
-    setCategoryId(category.id);
-  }
-
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -60,11 +54,6 @@ export default function UploadForm({
       setError("Song title cannot be empty.");
       return;
     }
-    const category = categories.find((c) => c.id === categoryId);
-    if (!category) {
-      setError("Select a category.");
-      return;
-    }
 
     setProgress(0);
     try {
@@ -72,8 +61,8 @@ export default function UploadForm({
         file,
         title,
         artist: artist || null,
-        categoryId: category.id,
-        categoryName: category.name,
+        era,
+        mood: mood === "neutral" ? null : mood,
         onProgress: setProgress,
       });
       onUploaded(song);
@@ -81,6 +70,7 @@ export default function UploadForm({
       setFile(null);
       setTitle("");
       setArtist("");
+      setMood("neutral");
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed.";
@@ -115,6 +105,7 @@ export default function UploadForm({
         <p className={`text-sm ${file ? "font-medium text-green-400" : "text-white/70"}`}>
           {file ? file.name : "Drag & drop an MP3 here, or click to browse"}
         </p>
+        {file && <p className="text-xs text-white/50">{formatFileSize(file.size)}</p>}
         <input
           ref={fileInputRef}
           type="file"
@@ -144,13 +135,36 @@ export default function UploadForm({
         />
       </label>
 
-      <div className="mb-4">
-        <CategoryManager
-          categories={categories}
-          selectedCategoryId={categoryId}
-          onSelectCategory={setCategoryId}
-          onCreateCategory={handleCreateCategory}
-        />
+      <div className="mb-4 grid grid-cols-2 gap-3">
+        <label className="block text-sm">
+          <span className="mb-1 block text-white/60">Era</span>
+          <select
+            value={era}
+            onChange={(event) => setEra(event.target.value as EraId)}
+            className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-white outline-none focus:border-amber-400/60"
+          >
+            {ERAS.map((e) => (
+              <option key={e.id} value={e.id} className="bg-[#1c0704]">
+                {e.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block text-sm">
+          <span className="mb-1 block text-white/60">Mood</span>
+          <select
+            value={mood}
+            onChange={(event) => setMood(event.target.value as Mood)}
+            className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-white outline-none focus:border-amber-400/60"
+          >
+            {MOODS.map((m) => (
+              <option key={m.id} value={m.id} className="bg-[#1c0704]">
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {progress !== null && (

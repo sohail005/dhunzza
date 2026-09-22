@@ -11,7 +11,7 @@ const features = [
     icon: Clock,
     title: "Shuffled All Day",
     description:
-      "Tap in and every song on the site shuffles into a nonstop mix — or pick a category if you want a specific vibe.",
+      "Tap in and every song on the site shuffles into a nonstop mix — or travel to a specific era if you want a particular vibe.",
   },
   {
     icon: InfinityIcon,

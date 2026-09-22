@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRadio } from "@/hooks/useRadio";
 import { useScrolledPastHero } from "@/hooks/useScrolledPastHero";
 import PlayerControls from "@/components/player/PlayerControls";
+import { ERA_BY_ID } from "@/lib/eras";
 
 const TRANSITION_MS = 300;
 
@@ -15,7 +16,7 @@ const TRANSITION_MS = 300;
  * actually play before it's removed from the DOM.
  */
 export default function MiniPlayer() {
-  const { currentSong, hasTunedIn, isLoading } = useRadio();
+  const { currentSong, currentEra, hasTunedIn, isLoading } = useRadio();
   const scrolledPastHero = useScrolledPastHero();
 
   const hasActivePlayer = hasTunedIn || !!currentSong;
@@ -55,6 +56,9 @@ export default function MiniPlayer() {
       }`}
     >
       <p className="min-w-0 flex-1 truncate text-xs font-semibold text-white sm:text-sm">
+        {currentEra && (
+          <span className="mr-1.5 text-accent">{ERA_BY_ID[currentEra].label}</span>
+        )}
         {isLoading ? "Tuning in…" : title}
       </p>
       <PlayerControls />

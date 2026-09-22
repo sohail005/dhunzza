@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Dosis, Noto_Serif_Devanagari } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { PlayerProvider } from "@/context/PlayerContext";
-import AmbientBackground from "@/components/AmbientBackground";
+import EraBackground from "@/components/EraBackground";
+import TimeTravelOverlay from "@/components/TimeTravelOverlay";
 import RootChrome from "@/components/RootChrome";
 
 const dosis = Dosis({
@@ -100,12 +100,30 @@ export const viewport: Viewport = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: "Dhunzza",
-  alternateName: ["Dhunzza Radio"],
-  url: SITE_URL,
-  description: SITE_DESCRIPTION,
-  inLanguage: "hi",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "Dhunzza",
+      alternateName: ["Dhunzza Radio"],
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      inLanguage: "hi",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+    },
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "Dhunzza",
+      alternateName: ["Dhunzza Radio"],
+      url: SITE_URL,
+      logo: `${SITE_URL}/dhunza.webp`,
+      // Once you have live social/profile URLs (Instagram, X, etc.), add a
+      // `sameAs: [...]` array here — that's what teaches Google "Dhunzza"
+      // is a distinct real-world entity, not a misspelling of a bigger,
+      // similar-looking brand.
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -115,20 +133,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="hi" className={`${dosis.variable} ${notoSerifDevanagari.variable}`}>
-      <body className="font-[family-name:var(--font-body)] antialiased">
-        <Script
+      <head>
+        {/* Plain <script>, not next/script — AdSense's head-tag validator
+            rejects the `data-nscript` attribute next/script's <Script>
+            component stamps on every tag it renders. */}
+        <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7274193441004898"
           crossOrigin="anonymous"
-          strategy="afterInteractive"
         />
+      </head>
+      <body className="font-[family-name:var(--font-body)] antialiased">
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger -- static, hardcoded JSON-LD, not user input
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <PlayerProvider>
-          <AmbientBackground />
+          <EraBackground />
+          <TimeTravelOverlay />
           <RootChrome>{children}</RootChrome>
         </PlayerProvider>
       </body>

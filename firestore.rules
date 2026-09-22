@@ -10,23 +10,6 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.admin == true;
     }
 
-    // Category doc ID is the slugified name (see slugify() in
-    // src/lib/firebase/songs.ts), so "no duplicate categories" is enforced
-    // right here: creating a category that already exists is rejected.
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow create: if isAdmin()
-        && !exists(/databases/$(database)/documents/categories/$(categoryId))
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 60;
-      // Categories are only ever created/deleted by the admin UI — never
-      // edited in place — so update is disabled outright rather than left
-      // open to anything an admin token could be tricked into sending.
-      allow update: if false;
-      allow delete: if isAdmin();
-    }
-
     match /songs/{songId} {
       allow read: if true;
       allow create: if isAdmin()
@@ -38,11 +21,18 @@ service cloud.firestore {
           || request.resource.data.artist == null
           || (request.resource.data.artist is string && request.resource.data.artist.size() <= 200)
         )
-        && request.resource.data.categoryId is string
-        && request.resource.data.categoryId.size() > 0
-        && request.resource.data.categoryId.size() <= 100
-        && request.resource.data.categoryName is string
-        && request.resource.data.categoryName.size() <= 100
+        && request.resource.data.era is string
+        && request.resource.data.era.size() > 0
+        && (
+          !("mood" in request.resource.data)
+          || request.resource.data.mood == null
+          || request.resource.data.mood is string
+        )
+        && (
+          !("background" in request.resource.data)
+          || request.resource.data.background == null
+          || request.resource.data.background is string
+        )
         && request.resource.data.audioPath is string
         && request.resource.data.audioPath.size() > 0
         && (

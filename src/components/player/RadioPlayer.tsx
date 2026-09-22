@@ -9,7 +9,8 @@ import PlayerVolume from "@/components/player/PlayerVolume";
 import MarqueeText from "@/components/player/MarqueeText";
 import RainEffect from "@/components/RainEffect";
 import PlaylistSelector from "@/components/PlaylistSelector";
-import CategorySelector from "@/components/CategorySelector";
+import EraSelector from "@/components/EraSelector";
+import { ERA_BY_ID } from "@/lib/eras";
 
 function copyToClipboard(text: string): boolean {
   if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -42,7 +43,7 @@ function fallbackCopy(text: string): boolean {
 }
 
 export default function RadioPlayer() {
-  const { currentSong, isPlaying, hasTunedIn, isLoading, playbackUnavailable, tuneIn } =
+  const { currentSong, currentEra, isPlaying, hasTunedIn, isLoading, playbackUnavailable, tuneIn } =
     useRadio();
   const [shareMessage, setShareMessage] = useState<string | null>(null);
 
@@ -93,7 +94,7 @@ export default function RadioPlayer() {
       className="absolute inset-x-3 top-[68%] z-40 -translate-y-1/2 sm:inset-x-6"
     >
       <div className="relative mx-auto flex w-full max-w-2xl flex-nowrap items-center justify-center gap-1 sm:flex-wrap sm:gap-2">
-        <CategorySelector className="w-auto shrink" />
+        <EraSelector className="w-auto shrink" />
         <PlaylistSelector className="w-auto shrink" />
         <RainEffect />
         <button
@@ -127,6 +128,11 @@ export default function RadioPlayer() {
           </span>
 
           <div className="min-w-0 flex-1">
+            {currentEra && (
+              <p className="text-[9px] font-semibold tracking-[0.2em] text-accent sm:text-[11px]">
+                You are in · {ERA_BY_ID[currentEra].label}
+              </p>
+            )}
             {currentSong ? (
               <>
                 <MarqueeText
@@ -134,11 +140,7 @@ export default function RadioPlayer() {
                   className="text-[14px] font-semibold text-white sm:text-[20px]"
                 />
                 <p className="truncate text-[12px] text-white/50 sm:text-[16px]">
-                  {isLoading
-                    ? "Tuning in…"
-                    : currentSong.artist
-                      ? `Credits: ${currentSong.artist}`
-                      : currentSong.categoryName}
+                  {isLoading ? "Tuning in…" : currentSong.artist || "Dhunzza"}
                 </p>
               </>
             ) : (

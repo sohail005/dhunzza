@@ -4,7 +4,7 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
+  getCountFromServer,
   getDocs,
   onSnapshot,
   orderBy,
@@ -16,64 +16,48 @@ import {
 } from "firebase/firestore";
 import { get, ref as dbRef, remove as dbRemove, set as dbSet } from "firebase/database";
 import { auth, db, rtdb } from "@/lib/firebase/config";
-import type { Category, Song } from "@/types/music";
+import type { EraId, Mood, Song } from "@/types/music";
+import { DEFAULT_ERA, ERAS } from "@/lib/eras";
 
-// Realtime Database has no per-document size cap like Firestore, but a
-// single JSON value should still stay well clear of its request-size
-// limits — 10MB raw (~13.5MB once base64-encoded) comfortably fits a
-// compressed 3-5 minute song while staying safely inside those limits.
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
-export function slugify(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+// Realtime Database rejects any single string value over 10,485,760 UTF-8
+// bytes. Base64-encoding a MAX_UPLOAD_BYTES file inflates it past that
+// (~4/3 the raw size), so the encoded audio is split into chunks — each
+// its own string value, well under the per-value cap — and rejoined on
+// playback. The combined payload isn't subject to the same per-value limit.
+const BASE64_CHUNK_SIZE = 6 * 1024 * 1024; // base64 is ASCII, so chars === UTF-8 bytes here
+
+function chunkBase64(base64: string): string[] {
+  const chunks: string[] = [];
+  for (let i = 0; i < base64.length; i += BASE64_CHUNK_SIZE) {
+    chunks.push(base64.slice(i, i + BASE64_CHUNK_SIZE));
+  }
+  return chunks;
 }
 
 function toEpochMs(value: unknown): number {
   return value instanceof Timestamp ? value.toMillis() : Date.now();
 }
 
-export async function fetchCategories(): Promise<Category[]> {
-  const snapshot = await getDocs(collection(db, "categories"));
-  return snapshot.docs
-    .map((docSnap) => {
-      const data = docSnap.data();
-      return {
-        id: docSnap.id,
-        name: String(data.name ?? docSnap.id),
-        createdAt: toEpochMs(data.createdAt),
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-
-export async function createCategory(name: string): Promise<Category> {
-  const trimmed = name.trim();
-  if (!trimmed) throw new Error("Category name cannot be empty.");
-
-  const id = slugify(trimmed);
-  if (!id) throw new Error("Category name must contain at least one letter or number.");
-
-  const categoryRef = doc(db, "categories", id);
-  const existing = await getDoc(categoryRef);
-  if (existing.exists()) {
-    throw new Error(`A category named "${trimmed}" already exists.`);
-  }
-
-  await setDoc(categoryRef, { name: trimmed, createdAt: serverTimestamp() });
-  return { id, name: trimmed, createdAt: Date.now() };
-}
+const VALID_ERAS = new Set<EraId>(["1800s", "1990s", "2000s", "2015s", "2026s"]);
+const VALID_MOODS = new Set<Mood>(["happy", "sad", "chill", "energetic", "neutral"]);
 
 function mapSongDoc(id: string, data: Record<string, unknown>): Song {
+  const rawEra = data.era;
+  const era: EraId =
+    typeof rawEra === "string" && VALID_ERAS.has(rawEra as EraId) ? (rawEra as EraId) : DEFAULT_ERA;
+  const rawMood = data.mood;
+  const mood: Mood | null =
+    typeof rawMood === "string" && VALID_MOODS.has(rawMood as Mood) ? (rawMood as Mood) : null;
+
   return {
     id,
     title: String(data.title ?? "Untitled"),
     artist: typeof data.artist === "string" ? data.artist : null,
-    categoryId: String(data.categoryId ?? ""),
-    categoryName: String(data.categoryName ?? ""),
+    era,
+    mood,
+    background: typeof data.background === "string" ? data.background : null,
     audioPath: String(data.audioPath ?? ""),
     thumbnailPath: typeof data.thumbnailPath === "string" ? data.thumbnailPath : null,
     duration: typeof data.duration === "number" ? data.duration : null,
@@ -82,11 +66,20 @@ function mapSongDoc(id: string, data: Record<string, unknown>): Song {
   };
 }
 
-export async function fetchSongsByCategory(categoryId: string): Promise<Song[]> {
-  const snapshot = await getDocs(
-    query(collection(db, "songs"), where("categoryId", "==", categoryId))
-  );
+export async function fetchSongsByEra(era: EraId): Promise<Song[]> {
+  const snapshot = await getDocs(query(collection(db, "songs"), where("era", "==", era)));
   return snapshot.docs.map((docSnap) => mapSongDoc(docSnap.id, docSnap.data()));
+}
+
+/** Song count per era, via count aggregation queries — cheap, no document downloads. */
+export async function fetchSongCountsByEra(): Promise<Record<EraId, number>> {
+  const entries = await Promise.all(
+    ERAS.map(async ({ id }) => {
+      const snapshot = await getCountFromServer(query(collection(db, "songs"), where("era", "==", id)));
+      return [id, snapshot.data().count] as const;
+    })
+  );
+  return Object.fromEntries(entries) as Record<EraId, number>;
 }
 
 export async function fetchAllSongsOnce(): Promise<Song[]> {
@@ -124,9 +117,10 @@ export function subscribeToNewSongs(
  */
 export async function fetchSongAudio(audioPath: string): Promise<string> {
   const snapshot = await get(dbRef(rtdb, audioPath));
-  const value = snapshot.val() as { data?: string; contentType?: string } | null;
+  const value = snapshot.val() as { data?: string | string[]; contentType?: string } | null;
   if (!value?.data) throw new Error("This song's audio file is missing.");
-  return `data:${value.contentType || "audio/mpeg"};base64,${value.data}`;
+  const base64 = Array.isArray(value.data) ? value.data.join("") : value.data;
+  return `data:${value.contentType || "audio/mpeg"};base64,${base64}`;
 }
 
 /** Resolves a song's `thumbnailPath` to a displayable data: URI. */
@@ -267,8 +261,9 @@ interface UploadSongInput {
   file: File;
   title: string;
   artist: string | null;
-  categoryId: string;
-  categoryName: string;
+  era: EraId;
+  mood?: Mood | null;
+  background?: string | null;
   onProgress?: (pct: number) => void;
 }
 
@@ -276,8 +271,9 @@ export async function uploadSong({
   file,
   title,
   artist,
-  categoryId,
-  categoryName,
+  era,
+  mood = null,
+  background = null,
   onProgress,
 }: UploadSongInput): Promise<Song> {
   const currentUser = auth.currentUser;
@@ -291,7 +287,7 @@ export async function uploadSong({
   }
   const trimmedTitle = title.trim();
   if (!trimmedTitle) throw new Error("Song title cannot be empty.");
-  if (!categoryId) throw new Error("A category must be selected.");
+  if (!era) throw new Error("An era must be selected.");
 
   const songRef = doc(collection(db, "songs"));
   const songId = songRef.id;
@@ -306,7 +302,11 @@ export async function uploadSong({
   const base64Data = await fileToBase64(file);
   onProgress?.(60);
 
-  await dbSet(dbRef(rtdb, audioPath), { data: base64Data, contentType: file.type });
+  const chunks = chunkBase64(base64Data);
+  await dbSet(dbRef(rtdb, audioPath), {
+    data: chunks.length > 1 ? chunks : base64Data,
+    contentType: file.type,
+  });
   onProgress?.(80);
 
   if (coverArt) {
@@ -321,8 +321,9 @@ export async function uploadSong({
       id: songId,
       title: trimmedTitle,
       artist: artist?.trim() || null,
-      categoryId,
-      categoryName,
+      era,
+      mood,
+      background,
       audioPath,
       thumbnailPath: coverArt ? thumbnailPath : null,
       duration,

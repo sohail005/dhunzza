@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Search, Trash2 } from "lucide-react";
 import type { Song } from "@/types/music";
 import SongThumbnail from "@/components/SongThumbnail";
+import { ERA_BY_ID } from "@/lib/eras";
 
 interface SongTableProps {
   songs: Song[];
@@ -29,7 +30,7 @@ export default function SongTable({ songs, isLoading, onDelete }: SongTableProps
     return songs.filter(
       (song) =>
         song.title.toLowerCase().includes(query) ||
-        song.categoryName.toLowerCase().includes(query) ||
+        song.era.toLowerCase().includes(query) ||
         (song.artist ?? "").toLowerCase().includes(query)
     );
   }, [songs, search]);
@@ -76,7 +77,7 @@ export default function SongTable({ songs, isLoading, onDelete }: SongTableProps
               <tr className="border-b border-white/10 text-xs text-white/40 uppercase">
                 <th className="py-2 pr-3 font-medium" />
                 <th className="py-2 pr-3 font-medium">Title</th>
-                <th className="py-2 pr-3 font-medium">Category</th>
+                <th className="py-2 pr-3 font-medium">Era</th>
                 <th className="py-2 pr-3 font-medium">Duration</th>
                 <th className="py-2 pr-3 font-medium" />
               </tr>
@@ -91,7 +92,7 @@ export default function SongTable({ songs, isLoading, onDelete }: SongTableProps
                     <p className="font-medium text-white">{song.title}</p>
                     {song.artist && <p className="text-xs text-white/40">{song.artist}</p>}
                   </td>
-                  <td className="py-2.5 pr-3 text-white/70">{song.categoryName}</td>
+                  <td className="py-2.5 pr-3 text-white/70">{ERA_BY_ID[song.era]?.label ?? song.era}</td>
                   <td className="py-2.5 pr-3 text-white/50 tabular-nums">
                     {formatDuration(song.duration)}
                   </td>

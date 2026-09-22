@@ -11,16 +11,16 @@ const faqs = [
   },
   {
     question: "What kind of music plays on Dhunzza?",
-    answer: "Old, evergreen Hindi songs organised into categories, so you can pick whatever fits the moment.",
+    answer: "Old, evergreen Hindi songs organised by era, so you can travel to whichever decade fits the moment.",
   },
   {
     question: "What happens when I tap \"Tune In\"?",
     answer: "It starts a shuffled mix of every song on the site — no setup needed.",
   },
   {
-    question: "Can I pick a specific category or playlist?",
+    question: "Can I pick a specific era or playlist?",
     answer:
-      "Yes. Use the Category button to pick a specific vibe, or the All Songs button to shuffle every song on the site.",
+      "Yes. Use the Era button to travel to a specific decade, or the All Songs button to shuffle every song on the site.",
   },
 ];
 

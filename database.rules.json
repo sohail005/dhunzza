@@ -6,7 +6,10 @@
         ".write": "auth != null && auth.token.admin === true",
         ".validate": "newData.hasChildren(['data', 'contentType'])",
         "data": {
-          ".validate": "newData.isString() && newData.val().length <= 14000000"
+          ".validate": "(newData.isString() && newData.val().length <= 9000000) || newData.hasChildren()",
+          "$chunkIndex": {
+            ".validate": "newData.isString() && newData.val().length <= 9000000"
+          }
         },
         "contentType": {
           ".validate": "newData.isString() && newData.val().length <= 100"

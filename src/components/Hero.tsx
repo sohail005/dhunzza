@@ -4,18 +4,13 @@ import { useEffect, useState } from "react";
 import { ChevronDown, HelpCircle, Heart, Info, Menu, X } from "lucide-react";
 import { formatISTClock } from "@/lib/time";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
-import { useRadio } from "@/hooks/useRadio";
 import SupportModal from "@/components/SupportModal";
 import InstallAppButton from "@/components/InstallAppButton";
-import PlaylistSelector from "@/components/PlaylistSelector";
 import RadioPlayer from "@/components/player/RadioPlayer";
 import Image from "next/image";
-import CrossfadeImage from "@/components/CrossfadeImage";
 import RecentlyAddedNotification from "@/components/player/RecentlyAddedNotification";
 
 const DEFAULT_OVERLAY = "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.8) 100%)";
-const DEFAULT_DESKTOP_IMAGE = "/images/dhunzza3.webp";
-const DEFAULT_MOBILE_IMAGE = "/images/heromobile.webp";
 
 // Hidden below sm — for nav items tucked into the mobile hamburger menu
 // instead of sitting in the always-visible top bar.
@@ -42,34 +37,17 @@ function useClock() {
 
 export default function Hero() {
   const onlineCount = useOnlineCount();
-  const { currentSong } = useRadio();
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const bgSeed = currentSong?.id ?? null;
-  const desktopBgTarget = bgSeed
-    ? `https://picsum.photos/seed/${encodeURIComponent(bgSeed)}/1600/900`
-    : null;
-  const mobileBgTarget = bgSeed
-    ? `https://picsum.photos/seed/${encodeURIComponent(bgSeed)}/900/1600`
-    : null;
-
   return (
     <section className="relative flex min-h-screen w-full flex-col overflow-hidden">
-      <CrossfadeImage
-        desktopTargetSrc={desktopBgTarget}
-        mobileTargetSrc={mobileBgTarget}
-        desktopFallbackSrc={DEFAULT_DESKTOP_IMAGE}
-        mobileFallbackSrc={DEFAULT_MOBILE_IMAGE}
-        alt="Dhunzza — nostalgic Hindi radio"
-        className="absolute inset-0 opacity-60"
-      />
       <div
         className="absolute inset-0"
         style={{ background: DEFAULT_OVERLAY }}
       />
 
-      <div className="relative z-30 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 py-4 sm:gap-4 sm:px-6 sm:py-6">
+      <div className="relative z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-4 sm:gap-4 sm:px-6 sm:py-6">
         <div className="liquid-glass col-start-1 flex items-center gap-1.5 justify-self-start rounded-full px-2.5 py-1.5 text-xs text-white sm:px-3 sm:text-sm">
           <span className="flex items-center gap-1.5 pl-1.5 font-semibold">
             <span className="relative flex h-1.5 w-1.5">
@@ -90,7 +68,6 @@ export default function Hero() {
             FAQ
           </a>
           <InstallAppButton className={`${GLASS_LINK_DESKTOP_ONLY} gap-1.5`} />
-          {/* <PlaylistSelector /> */}
           <button
             type="button"
             onClick={() => setIsSupportOpen(true)}

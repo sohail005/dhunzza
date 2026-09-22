@@ -4,13 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import {
-  createCategory as createCategoryRequest,
-  deleteSong as deleteSongRequest,
-  fetchAllSongsOnce,
-  fetchCategories,
-} from "@/lib/firebase/songs";
-import type { Category, Song } from "@/types/music";
+import { deleteSong as deleteSongRequest, fetchAllSongsOnce } from "@/lib/firebase/songs";
+import type { Song } from "@/types/music";
 import UploadForm from "@/components/admin/UploadForm";
 import SongTable from "@/components/admin/SongTable";
 
@@ -22,7 +17,6 @@ interface ToastState {
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { signOut } = useAdminAuth();
-  const [categories, setCategories] = useState<Category[]>([]);
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -41,11 +35,7 @@ export default function AdminDashboardPage() {
     (async () => {
       setIsLoading(true);
       try {
-        const [fetchedCategories, fetchedSongs] = await Promise.all([
-          fetchCategories(),
-          fetchAllSongsOnce(),
-        ]);
-        setCategories(fetchedCategories);
+        const fetchedSongs = await fetchAllSongsOnce();
         setSongs(fetchedSongs);
       } catch {
         showToast("Couldn't load dashboard data — check your connection.", "error");
@@ -54,12 +44,6 @@ export default function AdminDashboardPage() {
       }
     })();
   }, [showToast]);
-
-  async function handleCreateCategory(name: string): Promise<Category> {
-    const category = await createCategoryRequest(name);
-    setCategories((prev) => [...prev, category].sort((a, b) => a.name.localeCompare(b.name)));
-    return category;
-  }
 
   function handleUploaded(song: Song) {
     setSongs((prev) => [song, ...prev]);
@@ -96,12 +80,7 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="mb-6">
-          <UploadForm
-            categories={categories}
-            onUploaded={handleUploaded}
-            onToast={showToast}
-            createCategory={handleCreateCategory}
-          />
+          <UploadForm onUploaded={handleUploaded} onToast={showToast} />
         </div>
 
         <SongTable songs={songs} isLoading={isLoading} onDelete={handleDeleteSong} />

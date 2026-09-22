@@ -9,8 +9,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Song } from "@/types/music";
-import { fetchAllSongsOnce, fetchSongAudio, subscribeToNewSongs } from "@/lib/firebase/songs";
+import type { EraId, Song } from "@/types/music";
+import {
+  fetchAllSongsOnce,
+  fetchSongAudio,
+  fetchSongsByEra,
+  subscribeToNewSongs,
+} from "@/lib/firebase/songs";
 import NativeAudioPlayer, {
   type NativeAudioPlayerHandle,
 } from "@/components/player/NativeAudioPlayer";
@@ -18,7 +23,7 @@ import NativeAudioPlayer, {
 const STORAGE_KEYS = {
   song: "dhunzza.current-song",
   queue: "dhunzza.queue",
-  category: "dhunzza.current-category",
+  era: "dhunzza.current-era",
   volume: "dhunzza.volume",
   tunedIn: "dhunzza.has-tuned-in",
   lastSeenSongAt: "dhunzza.last-seen-song-at",
@@ -30,6 +35,12 @@ const DEFAULT_VOLUME = 80;
 // entire upload history.
 const RECENTLY_ADDED_FALLBACK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+// How long the "traveling through time" portal overlay plays before the
+// new era's queue/background actually take over — keep in sync with the
+// overlay's own CSS animation duration and timetravelsound.mp3's length
+// (~8s) in TimeTravelOverlay.tsx.
+const ERA_TRAVEL_DURATION_MS = 5000;
+
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -39,14 +50,11 @@ function shuffle<T>(items: T[]): T[] {
   return copy;
 }
 
-export interface CurrentCategory {
-  id: string;
-  name: string;
-}
-
 export interface PlayerContextValue {
   currentSong: Song | null;
-  currentCategory: CurrentCategory | null;
+  currentEra: EraId | null;
+  isTraveling: boolean;
+  travelingToEra: EraId | null;
   isPlaying: boolean;
   isLoading: boolean;
   isReady: boolean;
@@ -61,7 +69,8 @@ export interface PlayerContextValue {
   newSongNotification: Song[];
 
   tuneIn: () => void;
-  playQueue: (songs: Song[], category: CurrentCategory | null, startIndex?: number) => void;
+  playQueue: (songs: Song[], era?: EraId | null, startIndex?: number) => void;
+  travelToEra: (era: EraId) => void;
   play: () => void;
   pause: () => void;
   togglePlay: () => void;
@@ -90,7 +99,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<Song[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
-  const [currentCategory, setCurrentCategory] = useState<CurrentCategory | null>(null);
+  const [currentEra, setCurrentEra] = useState<EraId | null>(null);
+  const [isTraveling, setIsTraveling] = useState(false);
+  const [travelingToEra, setTravelingToEra] = useState<EraId | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   // No async SDK to wait for with a plain <audio> element (unlike the old
@@ -148,9 +159,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const playQueue = useCallback(
-    (songs: Song[], category: CurrentCategory | null, startIndex = 0) => {
+    (songs: Song[], era: EraId | null = null, startIndex = 0) => {
       setQueue(songs);
-      setCurrentCategory(category);
+      setCurrentEra(era ?? songs[0]?.era ?? null);
       goToIndex(songs, startIndex, true);
     },
     [goToIndex]
@@ -164,11 +175,43 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setPlaybackUnavailable(true);
         return;
       }
-      playQueue(shuffle(songs), null);
+      playQueue(shuffle(songs));
     } catch {
       setPlaybackUnavailable(true);
     }
   }, [playQueue]);
+
+  // Single choke point for era-switching: plays the portal transition for
+  // ERA_TRAVEL_DURATION_MS, then swaps in a shuffled queue of that era's
+  // songs so the "arrival" lines up with the overlay fading out.
+  const travelToEra = useCallback(
+    (era: EraId) => {
+      setIsTraveling(true);
+      setTravelingToEra(era);
+      // Cut playback the instant the portal starts — the old era's song
+      // shouldn't keep playing under the transition.
+      audioHandleRef.current?.pause();
+      setIsPlaying(false);
+      (async () => {
+        try {
+          const songs = await fetchSongsByEra(era);
+          await new Promise((resolve) => window.setTimeout(resolve, ERA_TRAVEL_DURATION_MS));
+          if (songs.length === 0) {
+            setCurrentEra(era);
+            setPlaybackUnavailable(true);
+            return;
+          }
+          playQueue(shuffle(songs), era);
+        } catch {
+          setPlaybackUnavailable(true);
+        } finally {
+          setIsTraveling(false);
+          setTravelingToEra(null);
+        }
+      })();
+    },
+    [playQueue]
+  );
 
   const play = useCallback(() => {
     if (!currentSong) return;
@@ -233,9 +276,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     (song: Song) => {
       setNewSongNotification((prev) => prev.filter((s) => s.id !== song.id));
       const nextQueue = [song, ...queue.filter((s) => s.id !== song.id)];
-      playQueue(nextQueue, currentCategory, 0);
+      playQueue(nextQueue, currentEra, 0);
     },
-    [queue, currentCategory, playQueue]
+    [queue, currentEra, playQueue]
   );
 
   const dismissNewSongNotification = useCallback(() => {
@@ -264,15 +307,37 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (savedSongJson && savedQueueJson) {
           const song: Song = JSON.parse(savedSongJson);
           const restoredQueue: Song[] = JSON.parse(savedQueueJson);
-          const savedCategoryJson = window.localStorage.getItem(STORAGE_KEYS.category);
-          const category: CurrentCategory | null = savedCategoryJson
-            ? JSON.parse(savedCategoryJson)
-            : null;
+          const savedEraJson = window.localStorage.getItem(STORAGE_KEYS.era);
+          const era: EraId | null = savedEraJson ? JSON.parse(savedEraJson) : song.era ?? null;
           const idx = restoredQueue.findIndex((s) => s.id === song.id);
 
           setQueue(restoredQueue);
-          setCurrentCategory(category);
+          setCurrentEra(era);
           goToIndex(restoredQueue, idx === -1 ? 0 : idx, false);
+
+          // The cached queue can go stale — songs get deleted server-side
+          // after this was written to localStorage. Reconcile against what
+          // actually still exists so deleted songs don't linger forever.
+          try {
+            const liveSongs = await fetchAllSongsOnce();
+            const liveIds = new Set(liveSongs.map((s) => s.id));
+            const stillValid = restoredQueue.filter((s) => liveIds.has(s.id));
+            if (stillValid.length !== restoredQueue.length) {
+              if (stillValid.length === 0) {
+                setQueue([]);
+                setCurrentSong(null);
+                setCurrentEra(null);
+                setPlaybackUnavailable(true);
+              } else {
+                const newIdx = stillValid.findIndex((s) => s.id === song.id);
+                setQueue(stillValid);
+                goToIndex(stillValid, newIdx === -1 ? 0 : newIdx, false);
+              }
+            }
+          } catch {
+            // Offline or fetch failed — keep the cached queue rather than
+            // clearing a perfectly good session over a transient error.
+          }
           return;
         }
       } catch {
@@ -288,7 +353,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (songs.length > 0) {
           const shuffled = shuffle(songs);
           setQueue(shuffled);
-          setCurrentCategory(null);
+          setCurrentEra(shuffled[0]?.era ?? null);
           goToIndex(shuffled, 0, false);
         }
       } catch {
@@ -381,12 +446,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined" || !currentSong) return;
     window.localStorage.setItem(STORAGE_KEYS.song, JSON.stringify(currentSong));
     window.localStorage.setItem(STORAGE_KEYS.queue, JSON.stringify(queue));
-    if (currentCategory) {
-      window.localStorage.setItem(STORAGE_KEYS.category, JSON.stringify(currentCategory));
+    if (currentEra) {
+      window.localStorage.setItem(STORAGE_KEYS.era, JSON.stringify(currentEra));
     } else {
-      window.localStorage.removeItem(STORAGE_KEYS.category);
+      window.localStorage.removeItem(STORAGE_KEYS.era);
     }
-  }, [currentSong, queue, currentCategory]);
+  }, [currentSong, queue, currentEra]);
 
   // Poll playback progress while playing.
   useEffect(() => {
@@ -433,7 +498,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: currentSong.title,
       artist: currentSong.artist ?? "Dhunzza",
-      album: currentSong.categoryName || "Dhunzza",
+      album: "Dhunzza",
     });
   }, [currentSong]);
 
@@ -495,7 +560,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const value = useMemo<PlayerContextValue>(
     () => ({
       currentSong,
-      currentCategory,
+      currentEra,
+      isTraveling,
+      travelingToEra,
       isPlaying,
       isLoading,
       isReady,
@@ -510,6 +577,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       newSongNotification,
       tuneIn,
       playQueue,
+      travelToEra,
       play,
       pause,
       togglePlay,
@@ -523,7 +591,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }),
     [
       currentSong,
-      currentCategory,
+      currentEra,
+      isTraveling,
+      travelingToEra,
       isPlaying,
       isLoading,
       isReady,
@@ -538,6 +608,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       newSongNotification,
       tuneIn,
       playQueue,
+      travelToEra,
       play,
       pause,
       togglePlay,

@@ -210,6 +210,82 @@ input[type="range"]::-moz-range-thumb {
   }
 }
 
+/* Era Background & Time Travel Portal ------------------------------- */
+
+.era-bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+@keyframes era-bg-drift {
+  from {
+    transform: scale(1.08) translate(0, 0);
+  }
+  to {
+    transform: scale(1.22) translate(-1.5%, -1%);
+  }
+}
+
+.animate-era-bg-drift {
+  animation: era-bg-drift 22s ease-in-out infinite alternate;
+}
+
+@keyframes portal-pulse {
+  0% {
+    transform: scale(0.92);
+    filter: blur(18px);
+    opacity: 0;
+  }
+  35% {
+    filter: blur(4px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.06);
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+.animate-portal-pulse {
+  animation: portal-pulse 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes light-streak {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-light-streak {
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 48%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.35) 52%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: light-streak 1.6s ease-in-out infinite;
+}
+
+@keyframes portal-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-portal-fade-out {
+  animation: portal-fade-out 0.5s ease-in forwards;
+}
+
 .no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
