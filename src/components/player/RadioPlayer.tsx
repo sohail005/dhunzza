@@ -6,6 +6,7 @@ import { useRadio } from "@/hooks/useRadio";
 import PlayerControls from "@/components/player/PlayerControls";
 import PlayerProgress from "@/components/player/PlayerProgress";
 import PlayerVolume from "@/components/player/PlayerVolume";
+import MarqueeText from "@/components/player/MarqueeText";
 import RainEffect from "@/components/RainEffect";
 import PlaylistSelector from "@/components/PlaylistSelector";
 import CategorySelector from "@/components/CategorySelector";
@@ -91,16 +92,17 @@ export default function RadioPlayer() {
       aria-label="Now playing"
       className="absolute inset-x-3 top-[68%] z-40 -translate-y-1/2 sm:inset-x-6"
     >
-      <div className="relative mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-        <CategorySelector className="w-auto shrink-0" />
-        <PlaylistSelector className="w-auto shrink-0" />
+      <div className="relative mx-auto flex w-full max-w-2xl flex-nowrap items-center justify-center gap-1 sm:flex-wrap sm:gap-2">
+        <CategorySelector className="w-auto shrink" />
+        <PlaylistSelector className="w-auto shrink" />
         <RainEffect />
         <button
           type="button"
           onClick={handleShare}
-          className="liquid-glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] whitespace-nowrap text-white/95 sm:gap-2 sm:px-4 sm:text-[16px]"
+          className="liquid-glass flex shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-[11px] whitespace-nowrap text-white/95 sm:gap-2 sm:px-4 sm:text-[16px]"
         >
-          <Share2 size={13} />
+          <Share2 size={12} className="shrink-0 sm:hidden" />
+          <Share2 size={13} className="hidden shrink-0 sm:block" />
           Share
         </button>
 
@@ -127,10 +129,11 @@ export default function RadioPlayer() {
           <div className="min-w-0 flex-1">
             {currentSong ? (
               <>
-                <p className="truncate text-[18px] font-semibold text-white sm:text-[20px]">
-                  {currentSong.title}
-                </p>
-                <p className="truncate text-[16px] text-white/50">
+                <MarqueeText
+                  text={currentSong.title}
+                  className="text-[14px] font-semibold text-white sm:text-[20px]"
+                />
+                <p className="truncate text-[12px] text-white/50 sm:text-[16px]">
                   {isLoading
                     ? "Tuning in…"
                     : currentSong.artist
@@ -139,7 +142,7 @@ export default function RadioPlayer() {
                 </p>
               </>
             ) : (
-              <p className="text-[18px] text-white/60">Nothing tuned in yet</p>
+              <p className="text-[14px] text-white/60 sm:text-[18px]">Nothing tuned in yet</p>
             )}
           </div>
 
@@ -154,7 +157,7 @@ export default function RadioPlayer() {
       </div>
 
       {playbackUnavailable && (
-        <p className="mx-auto mt-2 max-w-2xl text-center text-[16px] text-amber-400">
+        <p className="mx-auto mt-2 max-w-2xl text-center text-[13px] text-amber-400 sm:text-[16px]">
           Couldn&apos;t load a track right now — check your connection and try again.
         </p>
       )}

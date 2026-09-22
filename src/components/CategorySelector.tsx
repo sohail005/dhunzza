@@ -78,17 +78,17 @@ export default function CategorySelector({ className = "" }: { className?: strin
         onClick={() => setIsOpen((prev) => !prev)}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className="liquid-glass flex w-full items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12.5px] font-semibold whitespace-nowrap text-white sm:px-3 sm:text-[14px]"
+        className="liquid-glass flex w-full items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold whitespace-nowrap text-white sm:gap-1.5 sm:px-3 sm:text-[14px]"
       >
         {loadingId ? (
-          <Loader2 size={14} className="shrink-0 animate-spin text-white/80" aria-hidden="true" />
+          <Loader2 size={12} className="shrink-0 animate-spin text-white/80 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
         ) : (
-          <ListMusic size={14} className="shrink-0 text-white/80" aria-hidden="true" />
+          <ListMusic size={12} className="shrink-0 text-white/80 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
         )}
-        {currentCategory?.name ?? "Category"}
+        <span className="truncate">{currentCategory?.name ?? "Category"}</span>
         <ChevronDown
-          size={13}
-          className={`shrink-0 text-white/60 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          size={12}
+          className={`shrink-0 text-white/60 transition-transform sm:h-3.25 sm:w-3.25 ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 

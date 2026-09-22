@@ -9,8 +9,9 @@ import SupportModal from "@/components/SupportModal";
 import InstallAppButton from "@/components/InstallAppButton";
 import PlaylistSelector from "@/components/PlaylistSelector";
 import RadioPlayer from "@/components/player/RadioPlayer";
+import Image from "next/image";
 import CrossfadeImage from "@/components/CrossfadeImage";
-import MaskedHeading from "@/components/MaskedHeading";
+import RecentlyAddedNotification from "@/components/player/RecentlyAddedNotification";
 
 const DEFAULT_OVERLAY = "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.8) 100%)";
 const DEFAULT_DESKTOP_IMAGE = "/images/dhunzza3.webp";
@@ -40,7 +41,6 @@ function useClock() {
 }
 
 export default function Hero() {
-  const time = useClock();
   const onlineCount = useOnlineCount();
   const { currentSong } = useRadio();
   const [isSupportOpen, setIsSupportOpen] = useState(false);
@@ -57,16 +57,12 @@ export default function Hero() {
   return (
     <section className="relative flex min-h-screen w-full flex-col overflow-hidden">
       <CrossfadeImage
-        targetSrc={desktopBgTarget}
-        fallbackSrc={DEFAULT_DESKTOP_IMAGE}
+        desktopTargetSrc={desktopBgTarget}
+        mobileTargetSrc={mobileBgTarget}
+        desktopFallbackSrc={DEFAULT_DESKTOP_IMAGE}
+        mobileFallbackSrc={DEFAULT_MOBILE_IMAGE}
         alt="Dhunzza — nostalgic Hindi radio"
-        className="absolute inset-0 hidden h-full w-full object-cover opacity-60 sm:block"
-      />
-      <CrossfadeImage
-        targetSrc={mobileBgTarget}
-        fallbackSrc={DEFAULT_MOBILE_IMAGE}
-        alt="Dhunzza — nostalgic Hindi radio"
-        className="absolute inset-0 h-full w-full object-cover opacity-60 sm:hidden"
+        className="absolute inset-0 opacity-60"
       />
       <div
         className="absolute inset-0"
@@ -149,24 +145,22 @@ export default function Hero() {
 
       <div className="relative z-10 flex flex-1 flex-col px-4 text-center sm:mt-30 sm:px-6">
         <div className="mx-auto max-w-full flex flex-col rounded-2xl px-5 py-4 sm:px-0 sm:py-0">
-          <MaskedHeading
-            text="Dhunzza"
-            tag="h1"
-            mediaType="image"
-            src={DEFAULT_DESKTOP_IMAGE}
-            reveal="rise"
-            trigger="view"
-            align="center"
-            weight={700}
-            lineHeight={1.5}
-            brightness={1.8}
-            saturation={1.2}
-            textScale={0.3}
-            className="font-devanagari drop-shadow-lg"
-          />
+          <h1 className="mx-auto">
+            <Image
+              src="/dhunzza.webp"
+              alt="Dhunzza"
+              width={1254}
+              height={1254}
+              priority
+              className="mx-auto h-auto w-40 drop-shadow-lg sm:w-56"
+            />
+          </h1>
           <p className="mt-4 text-xs tracking-wider text-white/80 sm:text-sm">
             Old songs · Pure desi vibes · Playing all day
           </p>
+          <div className="mx-auto mt-4 w-full sm:hidden">
+            <RecentlyAddedNotification portalOverlay />
+          </div>
         </div>
       </div>
 

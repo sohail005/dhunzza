@@ -14,8 +14,8 @@ export default function PlayerProgress() {
   }
 
   return (
-    <div className="flex w-full items-center gap-2 text-[14px] text-white/60">
-      <span className="w-9 shrink-0 text-right tabular-nums">{formatDuration(currentTime)}</span>
+    <div className="flex w-full items-center gap-2 text-[12px] text-white/60 sm:text-[14px]">
+      <span className="w-8 shrink-0 text-right tabular-nums sm:w-9">{formatDuration(currentTime)}</span>
       <input
         type="range"
         min={0}
@@ -30,7 +30,7 @@ export default function PlayerProgress() {
           background: `linear-gradient(to right, var(--accent) ${pct}%, rgba(255,255,255,0.2) ${pct}%)`,
         }}
       />
-      <span className="w-9 shrink-0 tabular-nums">{formatDuration(duration)}</span>
+      <span className="w-8 shrink-0 tabular-nums sm:w-9">{formatDuration(duration)}</span>
     </div>
   );
 }

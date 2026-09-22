@@ -21,7 +21,9 @@ export default function RootChrome({ children }: { children: React.ReactNode }) 
       {!isAdmin && (
         <div className="fixed top-20 inset-x-3 z-40 flex flex-col items-stretch gap-3 sm:top-4 sm:inset-x-auto sm:right-4">
           <MiniPlayer />
-          <RecentlyAddedNotification />
+          <div className="hidden sm:block">
+            <RecentlyAddedNotification />
+          </div>
         </div>
       )}
     </>

@@ -62,11 +62,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon.svg", type: "image/svg+xml" },
-      { url: "/icons/dhunzza-icon.jpg", type: "image/jpeg" },
+      { url: "/dhunzza-logo-exact.svg", type: "image/svg+xml" },
+      { url: "/dhunza.webp", type: "image/webp" },
     ],
-    apple: "/icons/dhunzza-icon.jpg",
-    shortcut: "/icons/icon.svg",
+    apple: "/dhunza.webp",
+    shortcut: "/dhunzza-logo-exact.svg",
   },
   openGraph: {
     title: SITE_TITLE,
@@ -77,9 +77,9 @@ export const metadata: Metadata = {
     locale: "en_IN",
     images: [
       {
-        url: "/icons/dhunzza-icon.jpg",
-        width: 1264,
-        height: 1264,
+        url: "/dhunza.webp",
+        width: 1254,
+        height: 1254,
         alt: "Dhunzza",
       },
     ],
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: "Old songs. Pure desi vibes. Timeless Hindi songs, playing all day.",
-    images: ["/icons/dhunzza-icon.jpg"],
+    images: ["/dhunza.webp"],
   },
 };
 

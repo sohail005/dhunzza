@@ -48,12 +48,12 @@ export default function PlaylistSelector({ className = "" }: { className?: strin
         type="button"
         onClick={handleShuffleAll}
         disabled={isLoading}
-        className="liquid-glass flex w-full items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12.5px] font-semibold whitespace-nowrap text-white disabled:opacity-60 sm:px-3 sm:text-[14px]"
+        className="liquid-glass flex w-full items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold whitespace-nowrap text-white disabled:opacity-60 sm:gap-1.5 sm:px-3 sm:text-[14px]"
       >
         {isLoading ? (
-          <Loader2 size={14} className="shrink-0 animate-spin text-white/80" aria-hidden="true" />
+          <Loader2 size={12} className="shrink-0 animate-spin text-white/80 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
         ) : (
-          <Shuffle size={14} className="shrink-0 text-white/80" aria-hidden="true" />
+          <Shuffle size={12} className="shrink-0 text-white/80 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
         )}
         All Songs
       </button>

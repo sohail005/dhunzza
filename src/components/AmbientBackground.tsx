@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 
-const DEFAULT_IMAGE = "/images/dhunzza3.webp";
+// Tiny + pre-downscaled: the blur-2xl filter destroys fine detail anyway,
+// so a full-resolution source here would just waste bytes on invisible detail.
+const DEFAULT_IMAGE = "/images/ambient-bg.webp";
 
 export default function AmbientBackground() {
   return (
@@ -12,7 +14,6 @@ export default function AmbientBackground() {
         alt=""
         fill
         sizes="100vw"
-        priority
         className="scale-110 object-cover opacity-90 blur-2xl"
       />
       <div className="absolute inset-0 bg-[#0d0503]/60" />

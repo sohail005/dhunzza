@@ -361,14 +361,14 @@ export default function RainEffect() {
         type="button"
         onClick={() => setIsActive((prev) => !prev)}
         aria-pressed={isActive}
-        className={`liquid-glass inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[14px] font-semibold text-white transition ${
+        className={`liquid-glass inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-semibold whitespace-nowrap text-white transition sm:gap-1.5 sm:px-4 sm:text-[14px] ${
           isActive ? "border-blue-400/70 text-blue-200" : ""
         }`}
       >
         {isActive ? (
-          <Zap size={14} className="animate-bounce text-blue-300" />
+          <Zap size={12} className="shrink-0 animate-bounce text-blue-300 sm:h-3.5 sm:w-3.5" />
         ) : (
-          <CloudRain size={14} className="transition-transform group-hover:scale-125" />
+          <CloudRain size={12} className="shrink-0 transition-transform group-hover:scale-125 sm:h-3.5 sm:w-3.5" />
         )}
         {isActive ? "Sirf Gaane" : "Baarish?"}
       </button>

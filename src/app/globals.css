@@ -145,6 +145,19 @@ input[type="range"]::-moz-range-thumb {
   animation: pop-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--marquee-distance, 0));
+  }
+}
+
+.animate-marquee {
+  animation: marquee linear infinite;
+}
+
 /* Liquid glass — frosted, translucent buttons with a specular top edge.
    Wrapped in @layer components so utility classes (e.g. `absolute`) that
    are applied alongside `.liquid-glass` still win in the cascade. */
