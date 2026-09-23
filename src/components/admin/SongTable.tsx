@@ -156,14 +156,8 @@ export default function SongTable({ songs, isLoading, onDelete }: SongTableProps
       )}
 
       {pendingDelete && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => !isDeleting && setPendingDelete(null)}
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            className="liquid-glass-card w-full max-w-xs rounded-2xl p-5 text-center text-white"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="liquid-glass-card w-full max-w-xs rounded-2xl p-5 text-center text-white">
             <p className="mb-4 text-sm">
               Delete <span className="font-semibold">{pendingDelete.title}</span>? This can&apos;t
               be undone.

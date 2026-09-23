@@ -288,6 +288,12 @@ input[type="range"]::-moz-range-thumb {
     transform: scale(0.96);
   }
 
+  /* The song-request chat shouldn't get the sitewide press-shrink bounce —
+     it reads as jumpy on a tap-heavy surface like a chat/message list. */
+  .song-request-chat .liquid-glass:active {
+    transform: none;
+  }
+
   .liquid-glass-accent {
     border: 1px solid var(--accent);
   }

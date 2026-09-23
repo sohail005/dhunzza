@@ -162,14 +162,10 @@ export default function RecentlyAddedNotification({
   function renderOverlay() {
     const overlay = (
       <>
-        {/* Mobile only: dims the page and closes the list on outside tap.
-            On sm+ the list is a small inline dropdown, no backdrop needed. */}
-        <button
-          type="button"
-          onClick={() => setIsListOpen(false)}
-          aria-label="Close list"
-          className="fixed inset-0 z-40 animate-pop-in bg-black/60 sm:hidden"
-        />
+        {/* Mobile only: just dims the page — closing is via the X button,
+            not an outside tap. On sm+ the list is a small inline dropdown,
+            no backdrop needed. */}
+        <div aria-hidden className="fixed inset-0 z-40 animate-pop-in bg-black/60 sm:hidden" />
         <div className="liquid-glass-card animate-pop-in no-scrollbar fixed inset-x-3 bottom-4 z-50 max-h-[70vh] overflow-y-auto rounded-2xl bg-[rgba(15,8,6,0.94)] p-2 shadow-lg sm:static sm:inset-auto sm:z-auto sm:max-h-[min(60vh,26rem)]">
           {allSongs.map((song) => (
             <div

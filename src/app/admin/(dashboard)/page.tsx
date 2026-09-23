@@ -161,14 +161,8 @@ export default function AdminDashboardPage() {
       </div>
 
       {pendingCleanup && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => !isCleaningUp && setPendingCleanup(false)}
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            className="liquid-glass-card w-full max-w-xs rounded-2xl p-5 text-center text-white"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="liquid-glass-card w-full max-w-xs rounded-2xl p-5 text-center text-white">
             <p className="mb-4 text-sm">
               Permanently delete {unavailableSongs.length} unavailable song
               {unavailableSongs.length === 1 ? "" : "s"} from the database? This can&apos;t be undone.

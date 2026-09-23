@@ -76,12 +76,7 @@ export default function AllSongsBrowser({ className = "" }: { className?: string
   function renderOverlay() {
     const overlay = (
       <>
-        <button
-          type="button"
-          onClick={() => setIsOpen(false)}
-          aria-label="Close song list"
-          className="fixed inset-0 z-40 animate-pop-in bg-black/60"
-        />
+        <div aria-hidden className="fixed inset-0 z-40 animate-pop-in bg-black/60" />
         <div className="liquid-glass-card animate-pop-in fixed inset-x-3 top-1/2 z-50 flex max-h-[80vh] w-auto max-w-md -translate-y-1/2 flex-col gap-2 rounded-2xl bg-[rgba(15,8,6,0.96)] p-3 shadow-lg sm:inset-x-auto sm:left-1/2 sm:w-full sm:-translate-x-1/2">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-white">All songs</h2>

@@ -1,30 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BadgeCheck, Pin, QrCode, X } from "lucide-react";
+import { useState } from "react";
+import { BadgeCheck, Pin, QrCode } from "lucide-react";
 import { colorForName } from "@/lib/nameColor";
 import SupportModal from "@/components/SupportModal";
 
-const ANNOUNCEMENT_ID = "support-qr-2026";
 const ADMIN_NAME = "Dhunzza Admin";
 const MESSAGE = "Please support on QR to keep this platform smooth and Ad Free Forever. THANK YOU";
 
-const DISMISSED_KEY = `dhunzza:pinned:${ANNOUNCEMENT_ID}:dismissed`;
-
+// Always shown to every visitor — no dismiss/close affordance, and nothing
+// persisted about having "seen" it (unlike a normal toast).
 export default function PinnedAnnouncement() {
-  const [dismissed, setDismissed] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
-
-  useEffect(() => {
-    setDismissed(localStorage.getItem(DISMISSED_KEY) === "1");
-  }, []);
-
-  if (dismissed) return null;
-
-  function dismiss() {
-    localStorage.setItem(DISMISSED_KEY, "1");
-    setDismissed(true);
-  }
 
   return (
     <>
@@ -43,17 +30,9 @@ export default function PinnedAnnouncement() {
           type="button"
           onClick={() => setIsQrOpen(true)}
           aria-label="Show support QR code"
-          className="liquid-glass liquid-glass-accent mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition hover:scale-105"
+          className="liquid-glass liquid-glass-accent mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white"
         >
           <QrCode size={14} />
-        </button>
-        <button
-          type="button"
-          onClick={dismiss}
-          aria-label="Dismiss pinned message"
-          className="shrink-0 text-white/40 transition hover:text-white/70"
-        >
-          <X size={14} />
         </button>
       </div>
 

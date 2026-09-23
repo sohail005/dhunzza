@@ -239,12 +239,11 @@ export default function SongRequestsPanel({ onUploaded, onToast }: SongRequestsP
       {requestContext && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => closeDialog(true)}
           role="dialog"
           aria-modal="true"
           aria-label="Add requested song"
         >
-          <div onClick={(event) => event.stopPropagation()} className="w-full max-w-sm">
+          <div className="w-full max-w-sm">
             <UploadForm
               request={requestContext}
               onToast={onToast}
@@ -265,14 +264,8 @@ export default function SongRequestsPanel({ onUploaded, onToast }: SongRequestsP
       )}
 
       {pendingDelete && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => !isDeleting && setPendingDelete(null)}
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            className="liquid-glass-card w-full max-w-xs rounded-2xl p-5 text-center text-white"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="liquid-glass-card w-full max-w-xs rounded-2xl p-5 text-center text-white">
             <p className="mb-4 text-sm">
               Delete the request for <span className="font-semibold">{pendingDelete.songName}</span> from{" "}
               <span className="font-semibold">{pendingDelete.requesterName}</span>? This also removes their

@@ -29,6 +29,8 @@ export default function CommunityFeedMessage({ event }: { event: CommunityReques
     localStorage.setItem(likeKey(event.id), next ? "1" : "0");
   }
 
+  const likeCount = liked ? 1 : 0;
+
   return (
     <motion.div
       initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
@@ -51,9 +53,10 @@ export default function CommunityFeedMessage({ event }: { event: CommunityReques
           onClick={toggleLike}
           aria-pressed={liked}
           aria-label={liked ? "Unlike this message" : "Like this message"}
-          className="mt-0.5 shrink-0 text-white/50 transition hover:scale-110"
+          className="mt-0.5 flex shrink-0 items-center gap-1 text-white/70 flex-row"
         >
           <Heart size={14} className={liked ? "fill-rose-500 text-rose-500" : ""} />
+          <span className="text-[10px] tabular-nums leading-none text-white font-bold">{likeCount}</span>
         </button>
       </div>
     </motion.div>

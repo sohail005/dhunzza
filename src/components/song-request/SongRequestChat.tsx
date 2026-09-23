@@ -77,16 +77,14 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
       aria-modal="true"
       aria-hidden={!isOpen}
       aria-label="Dhunzza Song Request Assistant"
-      className={`fixed inset-0 z-50 items-center justify-center bg-black/70 backdrop-blur-sm sm:p-4 ${
+      className={`song-request-chat fixed inset-0 z-50 items-center justify-center bg-black/70 backdrop-blur-sm sm:p-4 ${
         isOpen ? "flex" : "hidden"
       }`}
-      onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
-        onClick={(event) => event.stopPropagation()}
         className="liquid-glass-card relative flex h-[100dvh] w-full flex-col overflow-hidden sm:h-[85dvh] sm:max-h-[720px] sm:w-full sm:max-w-[560px] sm:rounded-[24px]"
       >
         {/* Warm accent glow + extra opacity wash, layered above the glass
@@ -117,7 +115,7 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
             type="button"
             onClick={onClose}
             aria-label="Close song request chat"
-            className="liquid-glass flex h-8 w-8 items-center justify-center rounded-full text-white transition hover:scale-105"
+            className="liquid-glass flex h-8 w-8 items-center justify-center rounded-full text-white"
           >
             <X size={15} />
           </button>

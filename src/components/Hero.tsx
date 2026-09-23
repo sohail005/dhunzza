@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { HelpCircle, Heart, Info, Menu, Music, X } from "lucide-react";
+import { HelpCircle, Heart, Info, MessageCircle, Menu, X } from "lucide-react";
 import { formatISTClock } from "@/lib/time";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
+import { useLiveChatUnread } from "@/hooks/useLiveChatUnread";
 import SupportModal from "@/components/SupportModal";
 import SongRequestChat from "@/components/song-request/SongRequestChat";
 import InstallAppButton from "@/components/InstallAppButton";
@@ -49,6 +50,7 @@ export default function Hero() {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSongRequestOpen, setIsSongRequestOpen] = useState(false);
+  const unreadLiveChatCount = useLiveChatUnread(isSongRequestOpen);
   const headerRef = useRef<HTMLDivElement>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -144,8 +146,8 @@ export default function Hero() {
           </span>
           <InstallAppButton className={`${MEASURE_LINK} gap-1.5`} />
           <span className={`${MEASURE_LINK} gap-1.5`}>
-            <Music size={13} />
-            Request a song
+            <MessageCircle size={13} />
+            Live Chat
           </span>
         </div>
 
@@ -154,10 +156,15 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => setIsSongRequestOpen(true)}
-            className="liquid-glass liquid-glass-accent inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-semibold whitespace-nowrap text-white transition sm:px-4"
+            className="liquid-glass relative inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-semibold whitespace-nowrap text-white transition sm:px-4"
           >
-            <Music size={13} />
-            Request a song
+            <MessageCircle size={13} />
+            Live Chat
+            {unreadLiveChatCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {unreadLiveChatCount > 9 ? "9+" : unreadLiveChatCount}
+              </span>
+            )}
           </button>
         </nav>
 
@@ -218,10 +225,15 @@ export default function Hero() {
                 setIsMenuOpen(false);
                 setIsSongRequestOpen(true);
               }}
-              className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-left font-semibold text-white transition hover:bg-white/10"
+              className="relative flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-left font-semibold text-white transition hover:bg-white/10"
             >
-              <Music size={14} className="text-accent" />
-              Request a song
+              <MessageCircle size={14} className="text-accent" />
+              Live Chat
+              {unreadLiveChatCount > 0 && (
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadLiveChatCount > 9 ? "9+" : unreadLiveChatCount}
+                </span>
+              )}
             </button>
           </div>
         </>

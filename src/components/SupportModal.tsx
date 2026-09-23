@@ -23,12 +23,8 @@ export default function SupportModal({ onClose }: SupportModalProps) {
       aria-modal="true"
       aria-label="Support Dhunzza"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
     >
-      <div
-        className="liquid-glass-card relative w-full max-w-md rounded-2xl p-6 pt-8 text-center shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
+      <div className="liquid-glass-card relative w-full max-w-md rounded-2xl p-6 pt-8 text-center shadow-xl">
         <button
           type="button"
           onClick={onClose}
@@ -38,10 +34,10 @@ export default function SupportModal({ onClose }: SupportModalProps) {
           <X size={15} />
         </button>
 
-        <h3 className="font-[family-name:var(--font-devanagari)] px-2 text-[22px] font-semibold text-white sm:text-[26px]">
+        <h3 className="font-devanagari px-2 text-[16px] font-semibold text-white sm:text-[20px]">
           No ads — just memories. Support the platform to stay forever.
         </h3>
-        <p className="mt-3 text-[18px] leading-relaxed text-white/60">
+        <p className="mt-3 text-[18px] leading-relaxed text-white/70">
           We promise never to put ads and ruin your experience. But web server costs are
           high to keep this website smooth — please send any amount you wish. Thank you
           in advance! ❤️
@@ -56,7 +52,7 @@ export default function SupportModal({ onClose }: SupportModalProps) {
             className="h-full w-full object-contain"
           />
         </div>
-        <p className="mt-2 text-[16px] text-white/40">QR code to support Dhunzza</p>
+        <p className="mt-2 text-[16px] text-white/70">QR code to support Dhunzza</p>
 
         <a
           href="/images/dhunzzaqr.webp"
@@ -65,15 +61,7 @@ export default function SupportModal({ onClose }: SupportModalProps) {
         >
           Download QR Code
         </a>
-        <p className="mt-1 text-[14px] text-white/40">Save it and scan with any UPI app.</p>
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 text-[16px] text-white/50 underline hover:text-white/80"
-        >
-          Dismiss
-        </button>
+        <p className="mt-1 text-[14px] text-white/70">Save it and scan with any UPI app.</p>
       </div>
     </div>
   );
