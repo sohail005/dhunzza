@@ -40,7 +40,23 @@ const RECENTLY_ADDED_FALLBACK_WINDOW_MS = 24 * 60 * 60 * 1000;
 // new era's queue/background actually take over — keep in sync with the
 // overlay's own CSS animation duration and timetravelsound.mp3's length
 // (~8s) in TimeTravelOverlay.tsx.
-const ERA_TRAVEL_DURATION_MS = 5000;
+const ERA_TRAVEL_DURATION_MS = 4000;
+
+// Guards against fetchSongsByEra() hanging forever instead of rejecting —
+// e.g. a homescreen/PWA webapp getting backgrounded mid-request can suspend
+// the network connection without the underlying promise ever settling,
+// which would otherwise leave isTraveling stuck true (portal overlay stuck
+// on screen) until the page is reloaded.
+const ERA_FETCH_TIMEOUT_MS = 10000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error("Timed out")), ms);
+    }),
+  ]);
+}
 
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
@@ -201,7 +217,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setIsPlaying(false);
       (async () => {
         try {
-          const songs = await fetchSongsByEra(era);
+          const songs = await withTimeout(fetchSongsByEra(era), ERA_FETCH_TIMEOUT_MS);
           await new Promise((resolve) => window.setTimeout(resolve, ERA_TRAVEL_DURATION_MS));
           if (songs.length === 0) {
             setCurrentEra(era);

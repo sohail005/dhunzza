@@ -6,14 +6,14 @@ import { ERA_BY_ID } from "@/lib/eras";
 import { pickBackground } from "@/lib/eraBackgrounds";
 
 const SOUND_SRC = "/timetravelsound.mp3";
-const SOUND_VOLUME = 0.6;
+const SOUND_VOLUME = 0.2;
 const VIDEO_SRC = "/timetravelview.mp4";
 
 // Odometer-style roll from the era just left to the era arrived at — starts
 // fast and eases down gradually (rather than settling quickly), continuing
-// for most of the 6s portal/sound so it reads as decelerating alongside the
-// transition instead of finishing early and just sitting there.
-const YEAR_ROLL_DURATION_MS = 5000;
+// for most of the transition so it reads as decelerating alongside it
+// instead of finishing early and just sitting there.
+const YEAR_ROLL_DURATION_MS = 4000;
 const YEAR_ROLL_TICK_MS = 40;
 
 function eraYear(eraId: string): number {
