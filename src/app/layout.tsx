@@ -20,7 +20,7 @@ const notoSerifDevanagari = Noto_Serif_Devanagari({
   display: "swap",
 });
 
-const SITE_URL = "https://dhunzza.vercel.app";
+const SITE_URL = "https://dhunzza.in";
 const SITE_TITLE = "Dhunzza — 90s Hindi Radio | Old Hindi Songs, Playing All Day";
 const SITE_DESCRIPTION =
   "Dhunzza is a free nostalgic Hindi radio — nonstop old Bollywood songs, mood-based categories, and pure desi vibes, playing all day. Tap in and tune in to Dhunzza.";
