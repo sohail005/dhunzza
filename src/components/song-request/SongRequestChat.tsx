@@ -99,7 +99,7 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
             background:
-              "radial-gradient(120% 60% at 15% 0%, rgba(241,166,3,0.14) 0%, transparent 55%), radial-gradient(100% 50% at 100% 100%, rgba(252,165,3,0.1) 0%, transparent 60%), rgba(10,5,4,0.6)",
+              "radial-gradient(120% 60% at 15% 0%, rgba(241,166,3,0.16) 0%, transparent 55%), radial-gradient(100% 50% at 100% 100%, rgba(252,165,3,0.12) 0%, transparent 60%), rgba(10,5,4,0.32)",
           }}
         />
         {/* Header */}
