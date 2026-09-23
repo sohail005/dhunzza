@@ -158,38 +158,57 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const normalizedIndex = ((index % nextQueue.length) + nextQueue.length) % nextQueue.length;
-      const song = nextQueue[normalizedIndex];
-      playedIndicesRef.current.add(normalizedIndex);
+      // Loops (instead of recursing) through subsequent songs on failure —
+      // without this, a single missing/corrupted song's RTDB entry
+      // anywhere in the shuffled queue surfaced as "playback just broke"
+      // instead of silently skipping to the next track, which is what a
+      // listener actually experiences as "sometimes shows an error."
+      // Bounded by nextQueue.length so a fully broken queue still gives up
+      // instead of looping forever.
+      let attemptIndex = index;
+      for (let attempt = 0; attempt < nextQueue.length; attempt++) {
+        const normalizedIndex = ((attemptIndex % nextQueue.length) + nextQueue.length) % nextQueue.length;
+        const song = nextQueue[normalizedIndex];
+        playedIndicesRef.current.add(normalizedIndex);
 
-      // Cut the outgoing song immediately (fading, not a hard stop) —
-      // without this, the <audio> element keeps playing its old src for as
-      // long as fetchSongAudio() below takes, even though the UI already
-      // shows the new song loading.
-      audioHandleRef.current?.fadeOutAndPause();
+        // Cut the outgoing song immediately (fading, not a hard stop) —
+        // without this, the <audio> element keeps playing its old src for
+        // as long as fetchSongAudio() below takes, even though the UI
+        // already shows the new song loading.
+        audioHandleRef.current?.fadeOutAndPause();
 
-      setCurrentTime(0);
-      setDuration(0);
-      setPlaybackUnavailable(false);
-      setQueueIndex(normalizedIndex);
-      setCurrentSong(song);
-      loadedSongIdRef.current = song.id;
-      setIsPlaying(autoplay);
-      setIsLoading(true);
+        setCurrentTime(0);
+        setDuration(0);
+        setPlaybackUnavailable(false);
+        setQueueIndex(normalizedIndex);
+        setCurrentSong(song);
+        loadedSongIdRef.current = song.id;
+        setIsPlaying(autoplay);
+        setIsLoading(true);
 
-      try {
-        const audioSrc = await getCachedSongAudio(song.audioPath);
-        // If the user jumped to a different song while this was in
-        // flight, don't clobber whatever loaded after it.
-        if (loadedSongIdRef.current !== song.id) return;
-        audioHandleRef.current?.load(audioSrc, autoplay);
-        if (!autoplay) setIsLoading(false);
-      } catch {
-        if (loadedSongIdRef.current !== song.id) return;
-        setIsLoading(false);
-        setIsPlaying(false);
-        setPlaybackUnavailable(true);
+        try {
+          const audioSrc = await getCachedSongAudio(song.audioPath);
+          // If the user jumped to a different song while this was in
+          // flight, don't clobber whatever loaded after it.
+          if (loadedSongIdRef.current !== song.id) return;
+          audioHandleRef.current?.load(audioSrc, autoplay);
+          if (!autoplay) setIsLoading(false);
+          return;
+        } catch (error) {
+          if (loadedSongIdRef.current !== song.id) return;
+          // Always logged (not gated behind the dev-only debugLog) — this
+          // is a real playback failure, and the only way to tell "one
+          // song's RTDB entry is missing/corrupted" apart from "the
+          // network/RTDB itself is down" is to see the actual error.
+          console.error(`[player] failed to load audio for "${song.title}" (${song.id}):`, error);
+          setIsLoading(false);
+          setIsPlaying(false);
+          attemptIndex = normalizedIndex + 1;
+        }
       }
+
+      // Every song in the queue failed to load.
+      setPlaybackUnavailable(true);
     },
     []
   );

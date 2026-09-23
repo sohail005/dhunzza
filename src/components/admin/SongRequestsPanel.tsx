@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Music, Search } from "lucide-react";
+import { Music, Search, Trash2 } from "lucide-react";
 import type { Song } from "@/types/music";
 import UploadForm, { type RequestContext } from "@/components/admin/UploadForm";
 import {
   claimSongRequest,
   CLAIM_STALE_MS,
+  deleteSongRequest,
   releaseSongRequestClaim,
   subscribeToSongRequests,
   type AdminSongRequest,
@@ -34,6 +35,8 @@ export default function SongRequestsPanel({ onUploaded, onToast }: SongRequestsP
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [activeRequest, setActiveRequest] = useState<AdminSongRequest | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AdminSongRequest | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   // Ticks periodically so stale-claim detection (Date.now() - reviewedAt)
   // re-evaluates over time without calling the impure Date.now() at render
   // time — updated only from a timer callback, never synchronously in an
@@ -112,6 +115,20 @@ export default function SongRequestsPanel({ onUploaded, onToast }: SongRequestsP
     }
   }
 
+  async function confirmDeleteRequest() {
+    if (!pendingDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteSongRequest(pendingDelete.id);
+      onToast(`Request from ${pendingDelete.requesterName} deleted.`, "success");
+      setPendingDelete(null);
+    } catch {
+      onToast("Couldn't delete this request — try again.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   const requestContext: RequestContext | null = activeRequest
     ? { requestId: activeRequest.id, requesterName: activeRequest.requesterName, songName: activeRequest.songName }
     : null;
@@ -179,7 +196,7 @@ export default function SongRequestsPanel({ onUploaded, onToast }: SongRequestsP
                   </div>
                 </div>
 
-                <div className="shrink-0 self-end sm:self-center">
+                <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
                   {request.status === "pending" ? (
                     <button
                       type="button"
@@ -203,6 +220,15 @@ export default function SongRequestsPanel({ onUploaded, onToast }: SongRequestsP
                       Processing…
                     </span>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setPendingDelete(request)}
+                    disabled={claimingId === request.id}
+                    aria-label={`Delete request from ${request.requesterName}`}
+                    className="text-white/50 transition hover:text-red-400 disabled:opacity-40"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </li>
             );
@@ -234,6 +260,42 @@ export default function SongRequestsPanel({ onUploaded, onToast }: SongRequestsP
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {pendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => !isDeleting && setPendingDelete(null)}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className="liquid-glass-card w-full max-w-xs rounded-2xl p-5 text-center text-white"
+          >
+            <p className="mb-4 text-sm">
+              Delete the request for <span className="font-semibold">{pendingDelete.songName}</span> from{" "}
+              <span className="font-semibold">{pendingDelete.requesterName}</span>? This also removes their
+              saved chat session and its entry from the live requests feed — can&apos;t be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                disabled={isDeleting}
+                className="liquid-glass flex-1 rounded-xl py-2 text-sm disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteRequest}
+                disabled={isDeleting}
+                className="flex-1 rounded-xl bg-red-500/80 py-2 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-60"
+              >
+                {isDeleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}

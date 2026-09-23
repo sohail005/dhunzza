@@ -13,7 +13,7 @@ const LAST_SUBMIT_KEY = "dhunzza.song-request.last-submit";
 // disables itself instantly instead of waiting on a 429 round-trip.
 const COOLDOWN_MS = 45_000;
 
-const GREETING = "Hey! \u{1F44B} Want to help us grow Dhunzza? Tell us the song and your name below.";
+const GREETING = "Hey! \u{1F44B} Make Dhunzza better with us! Tell us your name and the song you want to hear. Your request could be our next addition!";
 const GENERIC_ERROR = "Hmm, something went wrong while sending your request. \u{1F615} Please try again.";
 const OFFLINE_ERROR = "You appear to be offline. Please reconnect and try again.";
 

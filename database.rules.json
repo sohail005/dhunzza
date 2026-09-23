@@ -63,6 +63,7 @@
         "songName": { ".validate": "newData.isString() && newData.val().length <= 150" },
         "requesterName": { ".validate": "newData.isString() && newData.val().length <= 60" },
         "createdAt": { ".validate": "newData.isNumber()" },
+        "requestId": { ".validate": "newData.val() == null || newData.isString()" },
         "$other": { ".validate": false }
       }
     },

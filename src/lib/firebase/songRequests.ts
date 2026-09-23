@@ -21,6 +21,11 @@ const DUPLICATE_WINDOW_MS = 60 * 60 * 1000;
 // fraction of submissions triggers a sweep instead of a scheduled job.
 const EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 const CLEANUP_CHANCE = 0.2;
+// The public feed entry and its songRequests record are written
+// milliseconds apart in the same call below — generous enough to match
+// reliably, tight enough not to catch an unrelated request for the same
+// song name submitted around the same time.
+const FEED_MATCH_WINDOW_MS = 60 * 1000;
 
 /**
  * Server-only write path for the chatbot's song requests. Always goes
@@ -59,9 +64,14 @@ export async function createSongRequest(input: SongRequestInput): Promise<SongRe
   }
 
   // Best-effort — the request itself is already saved above; a failure to
-  // broadcast it live shouldn't surface as a submission error.
+  // broadcast it live shouldn't surface as a submission error. requestId is
+  // stored so an admin deleting the request later (see
+  // deleteSongRequestWithSideEffects) can find and remove this exact entry
+  // instead of guessing by name/time — it's never read by the public feed
+  // UI (see communityFeed.ts, which only ever destructures the three public
+  // fields).
   db.ref(PUBLIC_FEED_PATH)
-    .push({ songName, requesterName, createdAt: ServerValue.TIMESTAMP })
+    .push({ songName, requesterName, createdAt: ServerValue.TIMESTAMP, requestId: ref.key })
     .catch((error) => console.error("public request feed write failed:", error));
 
   if (Math.random() < CLEANUP_CHANCE) {
@@ -71,6 +81,64 @@ export async function createSongRequest(input: SongRequestInput): Promise<SongRe
   }
 
   return { ok: true, requestId: ref.key, duplicate: isDuplicate };
+}
+
+/**
+ * Deletes a request (admin action — spam, duplicate, or one that won't be
+ * fulfilled) along with its side effects: the requester's saved chat
+ * session, and its broadcast entry in the public feed. Must go through the
+ * Admin SDK — database.rules.json hard-blocks client writes to
+ * publicRequestFeed (`.write: false`) regardless of the admin custom claim,
+ * so the admin panel's own client-side RTDB calls can never reach it.
+ */
+export async function deleteSongRequestWithSideEffects(requestId: string): Promise<void> {
+  const db = getAdminDatabase();
+  const requestRef = db.ref(`${REQUESTS_PATH}/${requestId}`);
+
+  const snapshot = await requestRef.get();
+  if (!snapshot.exists()) return; // already gone — nothing to do
+
+  const request = snapshot.val() as SongRequest;
+  await requestRef.remove();
+
+  if (request.sessionId) {
+    await db
+      .ref(`chatSessions/${request.sessionId}`)
+      .remove()
+      .catch((error) => console.error("chat session cleanup failed:", error));
+  }
+
+  await deleteMatchingPublicFeedEvents(requestId, request).catch((error) =>
+    console.error("public request feed cleanup failed:", error)
+  );
+}
+
+/** Finds the publicRequestFeed entry this request produced and removes it —
+ * exact match on requestId for entries written after that field existed,
+ * falling back to a name + time-window match for older entries. */
+async function deleteMatchingPublicFeedEvents(requestId: string, request: SongRequest): Promise<void> {
+  const db = getAdminDatabase();
+  const snapshot = await db
+    .ref(PUBLIC_FEED_PATH)
+    .orderByChild("createdAt")
+    .startAt(request.createdAt - FEED_MATCH_WINDOW_MS)
+    .endAt(request.createdAt + FEED_MATCH_WINDOW_MS)
+    .get();
+  if (!snapshot.exists()) return;
+
+  const updates: Record<string, null> = {};
+  snapshot.forEach((child) => {
+    const value = child.val() as { songName?: unknown; requesterName?: unknown; requestId?: unknown };
+    const isMatch =
+      value.requestId === requestId ||
+      (value.requestId === undefined &&
+        value.songName === request.songName &&
+        value.requesterName === request.requesterName);
+    if (isMatch && child.key) updates[child.key] = null;
+  });
+
+  const keys = Object.keys(updates);
+  if (keys.length > 0) await db.ref(PUBLIC_FEED_PATH).update(updates);
 }
 
 /**

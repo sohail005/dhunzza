@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={handleLogout}
-            className="liquid-glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-white"
+            className="liquid-glass bg-red-700 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-white"
           >
             <LogOut size={14} />
             Logout

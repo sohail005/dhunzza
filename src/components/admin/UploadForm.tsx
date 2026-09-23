@@ -7,6 +7,10 @@ import { MAX_UPLOAD_BYTES, readAudioDuration, uploadSong } from "@/lib/firebase/
 import { fulfillMatchingSongRequests } from "@/lib/firebase/songRequestFulfillment";
 import { fulfillSongRequest } from "@/lib/firebase/songRequestsAdmin";
 import { DEFAULT_ERA, ERAS, MOODS } from "@/lib/eras";
+import Dropdown from "@/components/Dropdown";
+
+const ERA_OPTIONS = ERAS.map((era) => ({ value: era.id, label: era.label }));
+const MOOD_OPTIONS = MOODS.map((mood) => ({ value: mood.id, label: mood.label }));
 
 /** When set, this upload is fulfilling a claimed song request — the
  * requester name comes from the trusted request record (read-only, never
@@ -215,32 +219,22 @@ export default function UploadForm({ onUploaded, onToast, request = null }: Uplo
       <div className="mb-4 grid grid-cols-2 gap-3">
         <label className="block text-sm">
           <span className="mb-1 block text-white/60">Era</span>
-          <select
+          <Dropdown
             value={era}
-            onChange={(event) => setEra(event.target.value as EraId)}
-            className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-white outline-none focus:border-amber-400/60"
-          >
-            {ERAS.map((e) => (
-              <option key={e.id} value={e.id} className="bg-[#1c0704]">
-                {e.label}
-              </option>
-            ))}
-          </select>
+            options={ERA_OPTIONS}
+            onChange={(value) => setEra(value as EraId)}
+            ariaLabel="Era"
+          />
         </label>
 
         <label className="block text-sm">
           <span className="mb-1 block text-white/60">Mood</span>
-          <select
+          <Dropdown
             value={mood}
-            onChange={(event) => setMood(event.target.value as Mood)}
-            className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-white outline-none focus:border-amber-400/60"
-          >
-            {MOODS.map((m) => (
-              <option key={m.id} value={m.id} className="bg-[#1c0704]">
-                {m.label}
-              </option>
-            ))}
-          </select>
+            options={MOOD_OPTIONS}
+            onChange={(value) => setMood(value as Mood)}
+            ariaLabel="Mood"
+          />
         </label>
       </div>
 

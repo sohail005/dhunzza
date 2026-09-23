@@ -119,6 +119,35 @@ export async function releaseSongRequestClaim(requestId: string): Promise<void> 
   });
 }
 
+/**
+ * Permanently removes a request (e.g. spam, a duplicate, or one the admin
+ * has decided not to fulfill), along with the requester's saved chat
+ * session and its broadcast entry in the public feed — otherwise the
+ * requester would reopen the chat and still see it, and every visitor would
+ * still see it in the live "recently requested" feed. Goes through a server
+ * route (not a direct client RTDB call) because the public feed is
+ * write-blocked for clients entirely — see
+ * src/app/api/admin/delete-song-request/route.ts. The live
+ * subscribeToSongRequests listener reflects the request removal for every
+ * open admin panel on its own — no manual local-state patching needed here.
+ */
+export async function deleteSongRequest(requestId: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("You must be signed in as an admin.");
+  const idToken = await user.getIdToken();
+
+  const response = await fetch("/api/admin/delete-song-request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ requestId }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(typeof data?.error === "string" ? data.error : "Couldn't delete this request.");
+  }
+}
+
 interface FulfillInput {
   requestId: string;
   songId: string;

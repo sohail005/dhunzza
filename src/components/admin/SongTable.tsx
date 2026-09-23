@@ -2,9 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, Search, Trash2 } from "lucide-react";
-import type { Song } from "@/types/music";
+import type { EraId, Song } from "@/types/music";
 import SongThumbnail from "@/components/SongThumbnail";
-import { ERA_BY_ID } from "@/lib/eras";
+import Dropdown from "@/components/Dropdown";
+import { ERA_BY_ID, ERAS } from "@/lib/eras";
+
+type EraFilter = EraId | "all";
+
+const ERA_FILTER_OPTIONS = [{ value: "all", label: "All eras" }, ...ERAS.map((era) => ({ value: era.id, label: era.label }))];
 
 interface SongTableProps {
   songs: Song[];
@@ -21,20 +26,23 @@ function formatDuration(seconds: number | null): string {
 
 export default function SongTable({ songs, isLoading, onDelete }: SongTableProps) {
   const [search, setSearch] = useState("");
+  const [eraFilter, setEraFilter] = useState<EraFilter>("all");
   const [pendingDelete, setPendingDelete] = useState<Song | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return songs;
-    return songs.filter(
-      (song) =>
+    return songs.filter((song) => {
+      if (eraFilter !== "all" && song.era !== eraFilter) return false;
+      if (!query) return true;
+      return (
         song.title.toLowerCase().includes(query) ||
         song.era.toLowerCase().includes(query) ||
         (song.artist ?? "").toLowerCase().includes(query)
-    );
-  }, [songs, search]);
+      );
+    });
+  }, [songs, search, eraFilter]);
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -57,7 +65,7 @@ export default function SongTable({ songs, isLoading, onDelete }: SongTableProps
         className={`flex w-full items-center justify-between gap-3 ${isOpen ? "mb-4" : ""}`}
       >
         <h2 className="text-sm font-semibold text-white/80 uppercase">
-          Songs {!isLoading && <span className="text-white/40">({songs.length})</span>}
+          Songs - {!isLoading && <span className="text-green/60 text-md">{songs.length}</span>}
         </h2>
         <ChevronDown
           size={16}
@@ -67,7 +75,7 @@ export default function SongTable({ songs, isLoading, onDelete }: SongTableProps
 
       {isOpen && (
         <div id="song-table-content">
-          <div className="mb-4">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row">
             <div className="relative w-full sm:w-56">
               <Search size={14} className="absolute top-1/2 left-2.5 -translate-y-1/2 text-white/40" />
               <input
@@ -75,9 +83,17 @@ export default function SongTable({ songs, isLoading, onDelete }: SongTableProps
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search…"
-                className="w-full rounded-full border border-white/15 bg-black/30 py-1.5 pr-3 pl-8 text-xs text-white outline-none focus:border-amber-400/60"
+                className="w-full rounded-full border bg-black/30 py-1.5 pr-3 pl-8 text-xs text-white outline-none focus:border-amber-400/60"
               />
             </div>
+            <Dropdown
+              value={eraFilter}
+              options={ERA_FILTER_OPTIONS}
+              onChange={(value) => setEraFilter(value as EraFilter)}
+              ariaLabel="Filter by era"
+              className="w-full sm:w-40"
+              buttonClassName="rounded-full border border-white/15 bg-black/30 px-3 py-1.5 text-xs focus:border-amber-400/60"
+            />
           </div>
 
           {isLoading ? (
@@ -88,7 +104,7 @@ export default function SongTable({ songs, isLoading, onDelete }: SongTableProps
             </p>
           ) : (
             <div className="no-scrollbar overflow-x-auto">
-              <table className="w-full min-w-[480px] text-left text-sm">
+              <table className="w-full min-w-120 text-left text-sm">
                 <thead>
                   <tr className="border-b border-white/10 text-xs text-white/40 uppercase">
                     <th className="py-2 pr-3 font-medium" />
