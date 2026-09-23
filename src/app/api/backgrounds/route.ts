@@ -51,9 +51,13 @@ async function fetchEraPhotos(era: EraId): Promise<string[]> {
   const response = await fetch(`https://pixabay.com/api/?${params.toString()}`);
   if (!response.ok) throw new Error(`Pixabay request failed (${response.status}).`);
 
-  const data = (await response.json()) as { hits?: { largeImageURL?: string }[] };
+  const data = (await response.json()) as { hits?: { webformatURL?: string }[] };
+  // webformatURL (~640px) over largeImageURL (~1280px) — this renders at
+  // 45% opacity under two more overlays on top (see EraBackground.tsx), so
+  // the extra resolution is invisible; it was costing 250-500KB per photo
+  // for detail nobody can see.
   const urls = (data.hits ?? [])
-    .map((hit) => hit.largeImageURL)
+    .map((hit) => hit.webformatURL)
     .filter((url): url is string => Boolean(url));
 
   if (urls.length === 0) throw new Error("Pixabay returned no usable images.");

@@ -77,7 +77,7 @@ export default function EraSelector({ className = "" }: { className?: string }) 
       {isOpen && (
         <div
           role="listbox"
-          className="liquid-glass-card no-scrollbar absolute bottom-full left-0 z-40 mb-2 flex max-h-72 w-40 flex-col gap-0.5 overflow-y-auto rounded-2xl bg-black/90 p-1.5 sm:top-full sm:bottom-auto sm:mb-0 sm:mt-2"
+          className="liquid-glass-card no-scrollbar absolute bottom-full left-0 z-40 mb-2 flex max-h-72 w-40 flex-col gap-0.5 overflow-y-auto rounded-2xl bg-black/90 p-1.5"
         >
           {ERAS.map((era) => (
             <button

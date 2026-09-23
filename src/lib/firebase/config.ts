@@ -1,7 +1,7 @@
 "use client";
 
 import { getApp, getApps, initializeApp, type FirebaseOptions } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
 
@@ -17,9 +17,20 @@ const firebaseConfig: FirebaseOptions = {
 // Guard against re-initializing on every Fast Refresh in dev.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
 export const db = getFirestore(app);
 // Audio files live in Realtime Database (base64) instead of Storage —
 // Storage requires the Blaze billing plan; RTDB works on the free Spark
 // plan. See src/lib/firebase/songs.ts for the read/write logic.
 export const rtdb = getDatabase(app);
+
+// getAuth() sets up cross-tab persistence, which loads a ~90KB iframe from
+// authDomain immediately — worth paying for admin flows, but every public
+// visitor (the vast majority of traffic) was paying it too just by this
+// module being imported (songs.ts pulls it in for uploadSong, and songs.ts
+// is imported from public-facing code). Deferred behind a lazy getter so
+// only actual auth usage (useAdminAuth, admin-only RTDB writers) triggers it.
+let authInstance: Auth | null = null;
+export function getFirebaseAuth(): Auth {
+  if (!authInstance) authInstance = getAuth(app);
+  return authInstance;
+}

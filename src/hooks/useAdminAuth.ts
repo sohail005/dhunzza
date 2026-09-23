@@ -7,7 +7,9 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
+import { getFirebaseAuth } from "@/lib/firebase/config";
+
+const auth = getFirebaseAuth();
 
 interface AdminAuthState {
   user: User | null;

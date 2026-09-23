@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ChevronDown, HelpCircle, Heart, Info, Menu, Music, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { HelpCircle, Heart, Info, Menu, Music, X } from "lucide-react";
 import { formatISTClock } from "@/lib/time";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
 import SupportModal from "@/components/SupportModal";
@@ -13,10 +13,18 @@ import RecentlyAddedNotification from "@/components/player/RecentlyAddedNotifica
 
 const DEFAULT_OVERLAY = "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.8) 100%)";
 
-// Hidden below sm — for nav items tucked into the mobile hamburger menu
-// instead of sitting in the always-visible top bar.
+// Tucked into the mobile hamburger menu instead of sitting in the
+// always-visible top bar — below sm, and also whenever data-compact-chrome
+// says the full nav wouldn't fit even though we're past sm (see
+// header-link-full in globals.css and the compact-detection effect below).
 const GLASS_LINK_DESKTOP_ONLY =
-  "liquid-glass hidden sm:inline-flex font-semibold items-center rounded-full px-4 py-1.5 text-white transition";
+  "liquid-glass header-link-full font-semibold items-center rounded-full px-4 py-1.5 text-white transition";
+
+// Mirrors GLASS_LINK_DESKTOP_ONLY's box model (padding/gap/text size) minus
+// the responsive show/hide logic — used only inside the invisible
+// measurement clone below, which must always render every item to find out
+// whether the *full* nav would fit, regardless of what's currently shown.
+const MEASURE_LINK = "inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 font-semibold whitespace-nowrap text-sm";
 
 function useClock() {
   const [time, setTime] = useState<string | null>(null);
@@ -41,6 +49,57 @@ export default function Hero() {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSongRequestOpen, setIsSongRequestOpen] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const badgeRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const navMeasureRef = useRef<HTMLDivElement>(null);
+
+  // Publishes this header's live height as --header-height (for the fixed
+  // "Recently Added"/mini-player stack, see RootChrome.tsx + globals.css)
+  // and flags <html data-compact-chrome> whenever the *full* nav (all 5
+  // items) wouldn't fit on one line — a tablet-width window, not just a
+  // phone. Compact mode then tucks About/FAQ/Add-to-Home-Screen into the
+  // same hamburger menu phones use (see header-link-full/header-menu-* in
+  // globals.css) instead of letting them wrap onto a second row, and the
+  // "Recently Added" toast falls back to the full-width in-flow layout
+  // instead of a floating corner card fighting the header for space.
+  //
+  // The "would it fit" check needs the nav's *unwrapped* width — measuring
+  // the real, already-responsive nav would create a feedback loop (hiding
+  // items shrinks it, which un-triggers compact mode, which re-shows them,
+  // which re-triggers it...). navMeasureRef is an invisible clone that
+  // always renders every item on one line so it's immune to that loop.
+  useEffect(() => {
+    const header = headerRef.current;
+    const badge = badgeRef.current;
+    const actions = actionsRef.current;
+    const measure = navMeasureRef.current;
+    if (!header || !badge || !actions || !measure || typeof ResizeObserver === "undefined") return;
+
+    function update() {
+      document.documentElement.style.setProperty("--header-height", `${header!.offsetHeight}px`);
+
+      const style = window.getComputedStyle(header!);
+      const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      const columnGap = parseFloat(style.columnGap || "0");
+      const available =
+        header!.clientWidth - paddingX - badge!.offsetWidth - actions!.offsetWidth - columnGap * 2;
+      const needed = measure!.scrollWidth;
+      document.documentElement.dataset.compactChrome = needed > available ? "true" : "false";
+    }
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    observer.observe(badge);
+    observer.observe(actions);
+    observer.observe(measure);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty("--header-height");
+      delete document.documentElement.dataset.compactChrome;
+    };
+  }, []);
 
   return (
     <section className="relative flex min-h-dvh w-full flex-col overflow-hidden">
@@ -49,8 +108,14 @@ export default function Hero() {
         style={{ background: DEFAULT_OVERLAY }}
       />
 
-      <div className="relative z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-4 sm:gap-4 sm:px-6 sm:py-6">
-        <div className="liquid-glass col-start-1 flex items-center gap-1.5 justify-self-start rounded-full px-2.5 py-1.5 text-xs text-white sm:px-3 sm:text-sm">
+      <div
+        ref={headerRef}
+        className="relative z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-4 sm:gap-4 sm:px-6 sm:py-6"
+      >
+        <div
+          ref={badgeRef}
+          className="liquid-glass col-start-1 flex items-center gap-1.5 justify-self-start rounded-full px-2.5 py-1.5 text-xs text-white sm:px-3 sm:text-sm"
+        >
           <span className="flex items-center gap-1.5 pl-1.5 font-semibold">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--green)] opacity-60" />
@@ -60,15 +125,31 @@ export default function Hero() {
           </span>
         </div>
 
-        <nav className="col-start-2 flex flex-nowrap items-center justify-center gap-1.5 justify-self-center text-xs sm:flex-wrap sm:gap-2 sm:text-sm">
-          <a href="#about" className={`${GLASS_LINK_DESKTOP_ONLY} gap-1.5`}>
+        {/* Invisible clone of the nav, always laid out on one line — used
+            only to measure whether the *real*, responsive nav (below)
+            would fit unwrapped. See the compact-detection effect above for
+            why this can't just measure the real nav. */}
+        <div
+          ref={navMeasureRef}
+          aria-hidden
+          className="pointer-events-none invisible absolute top-0 left-0 flex flex-nowrap items-center gap-4"
+        >
+          <span className={`${MEASURE_LINK} gap-1.5`}>
             <Info size={14} />
             About
-          </a>
-          <a href="#faq" className={`${GLASS_LINK_DESKTOP_ONLY} gap-1.5`}>
+          </span>
+          <span className={`${MEASURE_LINK} gap-1.5`}>
             <HelpCircle size={14} />
             FAQ
-          </a>
+          </span>
+          <InstallAppButton className={`${MEASURE_LINK} gap-1.5`} />
+          <span className={`${MEASURE_LINK} gap-1.5`}>
+            <Music size={13} />
+            Request a song
+          </span>
+        </div>
+
+        <nav className="col-start-2 flex flex-nowrap items-center justify-center gap-1.5 justify-self-center text-xs sm:flex-wrap sm:gap-2 sm:text-sm">
           <InstallAppButton className={`${GLASS_LINK_DESKTOP_ONLY} gap-1.5`} />
           <button
             type="button"
@@ -78,6 +159,12 @@ export default function Hero() {
             <Music size={13} />
             Request a song
           </button>
+        </nav>
+
+        <div
+          ref={actionsRef}
+          className="col-start-3 flex items-center gap-1.5 justify-self-end text-xs sm:gap-2 sm:text-sm"
+        >
           <button
             type="button"
             onClick={() => setIsSupportOpen(true)}
@@ -86,17 +173,16 @@ export default function Hero() {
             <Heart size={13} className="fill-current text-red-500" />
             Support us
           </button>
-        </nav>
-
-        <button
-          type="button"
-          onClick={() => setIsMenuOpen((open) => !open)}
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={isMenuOpen}
-          className="liquid-glass col-start-3 flex h-9 w-9 items-center justify-center justify-self-end rounded-full text-white sm:hidden"
-        >
-          {isMenuOpen ? <X size={18} /> : <Menu size={18} />}
-        </button>
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((open) => !open)}
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMenuOpen}
+            className="liquid-glass header-menu-trigger h-9 w-9 items-center justify-center rounded-full text-white"
+          >
+            {isMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
       </div>
 
       {isMenuOpen && (
@@ -105,9 +191,9 @@ export default function Hero() {
             type="button"
             aria-label="Close menu"
             onClick={() => setIsMenuOpen(false)}
-            className="fixed inset-0 z-20 sm:hidden"
+            className="header-menu-backdrop fixed inset-0 z-20"
           />
-          <div className="liquid-glass absolute inset-x-4 top-20 z-30 flex flex-col gap-1 rounded-2xl p-2 text-sm sm:hidden">
+          <div className="liquid-glass header-menu-panel absolute inset-x-4 top-20 z-30 flex-col gap-1 rounded-2xl p-2 text-sm">
             <a
               href="#about"
               onClick={() => setIsMenuOpen(false)}
@@ -150,23 +236,17 @@ export default function Hero() {
               width={1254}
               height={1254}
               priority
+              sizes="(min-width: 640px) 224px, 160px"
               className="mx-auto h-auto w-40 drop-shadow-lg sm:w-56"
             />
           </h1>
           <p className="mt-4 text-xs tracking-wider text-white/80 sm:text-sm">
-            Old songs · Pure desi vibes · Playing all day
+            Step Into an Era. Stay for the Music.
           </p>
-          <div className="mx-auto mt-4 w-full sm:hidden">
+          <div className="notification-mobile-slot mx-auto mt-4 w-full">
             <RecentlyAddedNotification portalOverlay />
           </div>
         </div>
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center gap-4 px-4 pb-8 sm:pb-10">
-        <span className="hidden flex-col items-center gap-1.5 text-xs tracking-[0.3em] text-white/90 uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] sm:flex">
-          Scroll
-          <ChevronDown size={18} className="animate-bounce drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]" />
-        </span>
       </div>
 
       <RadioPlayer />

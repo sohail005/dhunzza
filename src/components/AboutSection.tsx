@@ -29,8 +29,8 @@ export default function AboutSection() {
         <p className="mb-3 text-[14px] font-semibold tracking-[0.3em] text-amber-400 uppercase">
           Welcome to
         </p>
-        <h2 className="font-[family-name:var(--font-devanagari)] text-[32px] text-white sm:text-[50px]">
-          Dhunzza — the Mood of Old Songs
+        <h2 className="font-devanagari text-[32px] text-white sm:text-[50px]">
+          Dhunzza — Step Into an Era. Stay for the Music.
         </h2>
         <p className="mt-6 text-[16px] leading-relaxed text-white/70 sm:text-[18px]">
           Dhunzza is a free ambient Hindi radio built to recreate one very specific

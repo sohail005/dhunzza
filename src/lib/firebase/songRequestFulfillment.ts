@@ -1,7 +1,9 @@
 "use client";
 
 import { equalTo, get, orderByChild, query, ref as dbRef, serverTimestamp, update as dbUpdate } from "firebase/database";
-import { auth, rtdb } from "@/lib/firebase/config";
+import { getFirebaseAuth, rtdb } from "@/lib/firebase/config";
+
+const auth = getFirebaseAuth();
 import { normalizeSongName } from "@/lib/validation/songRequest";
 import { appendSongAddedMessage } from "@/lib/firebase/chatSessions";
 

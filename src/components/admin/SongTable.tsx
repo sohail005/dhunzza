@@ -6,6 +6,7 @@ import type { EraId, Song } from "@/types/music";
 import SongThumbnail from "@/components/SongThumbnail";
 import Dropdown from "@/components/Dropdown";
 import { ERA_BY_ID, ERAS } from "@/lib/eras";
+import { isPlayableSong } from "@/lib/firebase/songs";
 
 type EraFilter = EraId | "all";
 
@@ -121,7 +122,14 @@ export default function SongTable({ songs, isLoading, onDelete }: SongTableProps
                         <SongThumbnail thumbnailPath={song.thumbnailPath} />
                       </td>
                       <td className="py-2.5 pr-3">
-                        <p className="font-medium text-white">{song.title}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium text-white">{song.title}</p>
+                          {!isPlayableSong(song) && (
+                            <span className="shrink-0 rounded-full bg-red-500/20 px-1.5 py-0.5 text-[10px] font-medium text-red-400">
+                              Unavailable
+                            </span>
+                          )}
+                        </div>
                         {song.artist && <p className="text-xs text-white/40">{song.artist}</p>}
                       </td>
                       <td className="py-2.5 pr-3 text-white/70">{ERA_BY_ID[song.era]?.label ?? song.era}</td>

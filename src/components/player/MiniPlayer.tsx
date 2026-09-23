@@ -51,7 +51,7 @@ export default function MiniPlayer() {
     // Fixed bottom-right on mobile (own corner, clear of the top toast) —
     // becomes a static item in RootChrome's shared top-right stack at sm+.
     <div
-      className={`liquid-glass-card fixed right-3 bottom-4 z-40 flex max-w-[min(90vw,20rem)] items-center gap-2 self-start rounded-full py-1.5 pr-2 pl-4 shadow-lg transition-all duration-300 ease-out sm:static sm:z-auto ${
+      className={`liquid-glass-card fixed right-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40 flex max-w-[min(90vw,20rem)] items-center gap-2 self-start rounded-full py-1.5 pr-2 pl-4 shadow-lg transition-all duration-300 ease-out sm:static sm:bottom-auto sm:z-auto ${
         isEntered ? "translate-y-0 scale-100 opacity-100" : "-translate-y-3 scale-90 opacity-0"
       }`}
     >

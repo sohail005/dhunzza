@@ -11,7 +11,9 @@ import {
   serverTimestamp,
   update as dbUpdate,
 } from "firebase/database";
-import { auth, rtdb } from "@/lib/firebase/config";
+import { getFirebaseAuth, rtdb } from "@/lib/firebase/config";
+
+const auth = getFirebaseAuth();
 import { appendSongAddedMessage } from "@/lib/firebase/chatSessions";
 import type { SongRequest, SongRequestStatus } from "@/types/songRequest";
 import { debugLog } from "@/lib/firebase/debugLog";

@@ -71,14 +71,13 @@ export const metadata: Metadata = {
       { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-      { url: "/dhunzza-logo-exact.svg", type: "image/svg+xml" },
     ],
     apple: "/apple-touch-icon.png",
     shortcut: "/favicon.ico",
   },
   openGraph: {
     title: SITE_TITLE,
-    description: "Old songs. Pure desi vibes. Timeless Hindi songs, playing all day.",
+    description: "Step Into an Era. Stay for the Music. Timeless Hindi songs, playing all day.",
     url: SITE_URL,
     siteName: "Dhunzza",
     type: "website",
@@ -95,7 +94,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
-    description: "Old songs. Pure desi vibes. Timeless Hindi songs, playing all day.",
+    description: "Step Into an Era. Stay for the Music. Timeless Hindi songs, playing all day.",
     images: ["/dhunzza.webp"],
   },
 };

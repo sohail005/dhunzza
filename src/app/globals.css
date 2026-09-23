@@ -37,6 +37,98 @@ body.song-request-chat-open .site-chrome-stack {
   display: none;
 }
 
+/* Hero.tsx measures its header row (which can wrap to two lines at
+   in-between widths, e.g. a tablet where the nav no longer fits one line)
+   and writes the result here — a fixed Tailwind top-* offset would either
+   overlap a wrapped header or leave a big gap when it doesn't wrap. */
+@media (min-width: 640px) {
+  .site-chrome-stack {
+    top: calc(var(--header-height, 6rem) + 0.75rem);
+    right: 1.5rem;
+    left: auto;
+  }
+}
+
+/* Two layouts for the "Recently Added" toast: a full-width card in normal
+   flow (phones) vs a floating corner card (desktop). Hero.tsx flags
+   data-compact-chrome on <html> whenever its nav wraps to a second line —
+   happens at tablet widths too, not just phones — and the in-flow layout
+   switches over there as well so it never has to share cramped space with
+   a wrapped nav. */
+.notification-mobile-slot {
+  display: none;
+}
+.notification-desktop-slot {
+  display: block;
+}
+@media (max-width: 639px) {
+  .notification-mobile-slot {
+    display: block;
+  }
+  .notification-desktop-slot {
+    display: none;
+  }
+}
+html[data-compact-chrome="true"] .notification-mobile-slot {
+  display: block;
+}
+html[data-compact-chrome="true"] .notification-desktop-slot {
+  display: none;
+}
+
+/* Header nav degrades to the same hamburger-menu layout phones use whenever
+   the full nav (About/FAQ/Add to Home Screen/Request a song/Support us)
+   doesn't fit on one line — not just below the sm breakpoint. See the
+   compact-detection effect in Hero.tsx for how data-compact-chrome is
+   computed. */
+.header-link-full {
+  display: none;
+}
+@media (min-width: 640px) {
+  .header-link-full {
+    display: inline-flex;
+  }
+}
+html[data-compact-chrome="true"] .header-link-full {
+  display: none;
+}
+
+.header-menu-trigger {
+  display: flex;
+}
+@media (min-width: 640px) {
+  .header-menu-trigger {
+    display: none;
+  }
+}
+html[data-compact-chrome="true"] .header-menu-trigger {
+  display: flex;
+}
+
+.header-menu-backdrop {
+  display: block;
+}
+@media (min-width: 640px) {
+  .header-menu-backdrop {
+    display: none;
+  }
+}
+html[data-compact-chrome="true"] .header-menu-backdrop {
+  display: block;
+}
+
+.header-menu-panel {
+  display: flex;
+}
+@media (min-width: 640px) {
+  .header-menu-panel {
+    display: none;
+  }
+}
+html[data-compact-chrome="true"] .header-menu-panel {
+  display: flex;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

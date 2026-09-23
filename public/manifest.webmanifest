@@ -1,7 +1,7 @@
 {
   "name": "Dhunzza",
   "short_name": "Dhunzza",
-  "description": "Old songs. Pure desi vibes.",
+  "description": "Step Into an Era. Stay for the Music.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#073b4c",
@@ -17,12 +17,6 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/dhunzza-logo-exact.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
       "purpose": "any"
     }
   ]

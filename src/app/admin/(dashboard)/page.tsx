@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Trash2 } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { deleteSong as deleteSongRequest } from "@/lib/firebase/songs";
+import { deleteSong as deleteSongRequest, isPlayableSong } from "@/lib/firebase/songs";
 import { getSongsOnce, removeSongFromCache, upsertSongInCache } from "@/lib/firebase/songsCache";
 import type { Song } from "@/types/music";
 import UploadForm from "@/components/admin/UploadForm";
@@ -25,6 +25,8 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [tab, setTab] = useState<DashboardTab>("songs");
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
+  const [pendingCleanup, setPendingCleanup] = useState(false);
 
   const showToast = useCallback((message: string, kind: "success" | "error") => {
     setToast({ message, kind });
@@ -63,6 +65,34 @@ export default function AdminDashboardPage() {
       showToast(`"${song.title}" deleted.`, "success");
     } catch {
       showToast("Couldn't delete that song — try again.", "error");
+    }
+  }
+
+  const unavailableSongs = songs.filter((song) => !isPlayableSong(song));
+
+  async function handleRemoveUnavailable() {
+    setIsCleaningUp(true);
+    try {
+      const targets = unavailableSongs;
+      const deletedIds = new Set<string>();
+      for (const song of targets) {
+        try {
+          await deleteSongRequest(song.id, song.audioPath, song.thumbnailPath);
+          removeSongFromCache(song.id);
+          deletedIds.add(song.id);
+        } catch {
+          // Left in the list — admin can retry the cleanup.
+        }
+      }
+      setSongs((prev) => prev.filter((s) => !deletedIds.has(s.id)));
+      if (deletedIds.size < targets.length) {
+        showToast(`Removed ${deletedIds.size} of ${targets.length} unavailable songs.`, "error");
+      } else {
+        showToast(`Removed ${deletedIds.size} unavailable song${deletedIds.size === 1 ? "" : "s"}.`, "success");
+      }
+    } finally {
+      setIsCleaningUp(false);
+      setPendingCleanup(false);
     }
   }
 
@@ -106,12 +136,64 @@ export default function AdminDashboardPage() {
             <div className="mb-6">
               <UploadForm onUploaded={handleUploaded} onToast={showToast} />
             </div>
+            {!isLoading && unavailableSongs.length > 0 && (
+              <div className="liquid-glass-card mb-6 flex items-center justify-between gap-3 rounded-2xl p-4 text-sm">
+                <p className="text-white/80">
+                  {unavailableSongs.length} song{unavailableSongs.length === 1 ? "" : "s"} can&apos;t be
+                  played (missing audio) and {unavailableSongs.length === 1 ? "is" : "are"} hidden from
+                  listeners.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setPendingCleanup(true)}
+                  className="liquid-glass flex shrink-0 items-center gap-1.5 rounded-full bg-red-700 px-3 py-1.5 text-white"
+                >
+                  <Trash2 size={14} />
+                  Remove from DB
+                </button>
+              </div>
+            )}
             <SongTable songs={songs} isLoading={isLoading} onDelete={handleDeleteSong} />
           </>
         ) : (
           <SongRequestsPanel onUploaded={handleUploaded} onToast={showToast} />
         )}
       </div>
+
+      {pendingCleanup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => !isCleaningUp && setPendingCleanup(false)}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className="liquid-glass-card w-full max-w-xs rounded-2xl p-5 text-center text-white"
+          >
+            <p className="mb-4 text-sm">
+              Permanently delete {unavailableSongs.length} unavailable song
+              {unavailableSongs.length === 1 ? "" : "s"} from the database? This can&apos;t be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingCleanup(false)}
+                disabled={isCleaningUp}
+                className="liquid-glass flex-1 rounded-xl py-2 text-sm disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRemoveUnavailable}
+                disabled={isCleaningUp}
+                className="flex-1 rounded-xl bg-red-500/80 py-2 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-60"
+              >
+                {isCleaningUp ? "Removing…" : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div

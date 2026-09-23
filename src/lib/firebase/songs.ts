@@ -15,7 +15,7 @@ import {
   where,
 } from "firebase/firestore";
 import { get, ref as dbRef, remove as dbRemove, set as dbSet } from "firebase/database";
-import { auth, db, rtdb } from "@/lib/firebase/config";
+import { getFirebaseAuth, db, rtdb } from "@/lib/firebase/config";
 import type { EraId, Mood, Song } from "@/types/music";
 import { DEFAULT_ERA } from "@/lib/eras";
 import { debugLog } from "@/lib/firebase/debugLog";
@@ -292,7 +292,7 @@ export async function uploadSong({
   background = null,
   onProgress,
 }: UploadSongInput): Promise<Song> {
-  const currentUser = auth.currentUser;
+  const currentUser = getFirebaseAuth().currentUser;
   if (!currentUser?.email) throw new Error("You must be signed in as an admin to upload.");
 
   if (!file.type.startsWith("audio/")) {
