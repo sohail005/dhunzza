@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { EraId, Song } from "@/types/music";
-import { subscribeToNewSongs } from "@/lib/firebase/songs";
+import { isPlayableSong, subscribeToNewSongs } from "@/lib/firebase/songs";
 import { getSongsOnce, upsertSongInCache } from "@/lib/firebase/songsCache";
 import { getCachedSongAudio, getCachedSongThumbnail } from "@/lib/firebase/mediaCache";
 import { debugLog } from "@/lib/firebase/debugLog";
@@ -227,7 +227,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const tuneIn = useCallback(async () => {
     setHasTunedIn(true);
     try {
-      const songs = await getSongsOnce();
+      const songs = (await getSongsOnce()).filter(isPlayableSong);
       if (songs.length === 0) {
         setPlaybackUnavailable(true);
         return;
@@ -257,7 +257,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           // including re-visiting an era already seen this session, cost
           // zero additional reads once the cache is warm.
           const allSongs = await withTimeout(getSongsOnce(), ERA_FETCH_TIMEOUT_MS);
-          const songs = allSongs.filter((song) => song.era === era);
+          const songs = allSongs.filter((song) => song.era === era && isPlayableSong(song));
           await new Promise((resolve) => window.setTimeout(resolve, ERA_TRAVEL_DURATION_MS));
           if (songs.length === 0) {
             setCurrentEra(era);
@@ -383,7 +383,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           // actually still exists so deleted songs don't linger forever.
           try {
             const liveSongs = await getSongsOnce();
-            const liveIds = new Set(liveSongs.map((s) => s.id));
+            const liveIds = new Set(liveSongs.filter(isPlayableSong).map((s) => s.id));
             const stillValid = restoredQueue.filter((s) => liveIds.has(s.id));
             if (stillValid.length !== restoredQueue.length) {
               if (stillValid.length === 0) {
@@ -412,7 +412,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       // prompt. Cueing doesn't need a user gesture; only play() does, which
       // the visible Play button provides.
       try {
-        const songs = await getSongsOnce();
+        const songs = (await getSongsOnce()).filter(isPlayableSong);
         if (songs.length > 0) {
           const shuffled = shuffle(songs);
           setQueue(shuffled);

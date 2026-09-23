@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Music, Send, WifiOff, X } from "lucide-react";
 import ChatMessage from "@/components/song-request/ChatMessage";
 import CommunityFeedMessage from "@/components/song-request/CommunityFeedMessage";
+import PinnedAnnouncement from "@/components/song-request/PinnedAnnouncement";
 import TypingIndicator from "@/components/song-request/TypingIndicator";
 import { useSongRequestChat } from "@/hooks/useSongRequestChat";
 import type { ChatMessage as ChatMessageType } from "@/types/chat";
@@ -107,9 +108,9 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
             <span className="liquid-glass liquid-glass-accent flex h-10 w-10 items-center justify-center rounded-full text-lg">
               🎵
             </span>
-            <div>
+            <div className="flex align-items justify-center gap-2">
               <p className="text-sm font-semibold text-white">Dhunzza</p>
-              <p className="text-xs text-white/50">Song Request Assistant</p>
+              <p className="text-sm text-accent font-extrabold">Live Chat</p>
             </div>
           </div>
           <button
@@ -121,6 +122,8 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
             <X size={15} />
           </button>
         </div>
+
+        <PinnedAnnouncement />
 
         {/* Messages — inner wrapper is min-h-full + justify-end so a short
             conversation hugs the bottom (near the input, like a normal chat)

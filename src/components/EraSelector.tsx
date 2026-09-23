@@ -5,6 +5,7 @@ import { ChevronDown, Clock, Loader2 } from "lucide-react";
 import { useRadio } from "@/hooks/useRadio";
 import { ERA_BY_ID, ERAS } from "@/lib/eras";
 import { getSongsOnce } from "@/lib/firebase/songsCache";
+import { isPlayableSong } from "@/lib/firebase/songs";
 import type { EraId } from "@/types/music";
 
 export default function EraSelector({ className = "" }: { className?: string }) {
@@ -21,7 +22,7 @@ export default function EraSelector({ className = "" }: { className?: string }) 
     getSongsOnce()
       .then((songs) => {
         const grouped = Object.fromEntries(ERAS.map((era) => [era.id, 0])) as Record<EraId, number>;
-        for (const song of songs) grouped[song.era] += 1;
+        for (const song of songs) if (isPlayableSong(song)) grouped[song.era] += 1;
         setCounts(grouped);
       })
       .catch(() => {});

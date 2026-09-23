@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { ListMusic, Loader2, Play, Search, X } from "lucide-react";
 import { useRadio } from "@/hooks/useRadio";
 import { getSongsOnce } from "@/lib/firebase/songsCache";
+import { isPlayableSong } from "@/lib/firebase/songs";
 import type { Song } from "@/types/music";
 import SongThumbnail from "@/components/SongThumbnail";
 
@@ -27,7 +28,9 @@ export default function AllSongsBrowser({ className = "" }: { className?: string
     setIsLoading(true);
     setError(null);
     getSongsOnce()
-      .then((result) => setSongs([...result].sort((a, b) => a.title.localeCompare(b.title))))
+      .then((result) =>
+        setSongs(result.filter(isPlayableSong).sort((a, b) => a.title.localeCompare(b.title)))
+      )
       .catch(() => setError("Couldn't load songs — check your connection."))
       .finally(() => setIsLoading(false));
   }, [isOpen, songs, isLoading]);

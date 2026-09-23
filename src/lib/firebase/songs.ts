@@ -67,6 +67,20 @@ function mapSongDoc(id: string, data: Record<string, unknown>): Song {
   };
 }
 
+/**
+ * True for songs whose audio can actually be resolved. A handful of songs
+ * uploaded before the Firebase Storage -> Realtime Database migration
+ * (see git history) never got an `audioPath` backfilled and their original
+ * Storage files are gone now that the project runs Storage-free — playing
+ * one throws "This song's audio file is missing." Filtered out of every
+ * playback surface (tune-in, era travel, browse-all, playlists) so a
+ * listener can no longer pick a dead track; the admin dashboard still lists
+ * them (via fetchAllSongsOnce/getSongsOnce directly) so they can be deleted.
+ */
+export function isPlayableSong(song: Song): boolean {
+  return song.audioPath !== "";
+}
+
 export async function fetchAllSongsOnce(): Promise<Song[]> {
   debugLog("songs", "getDocs: full songs collection read");
   const snapshot = await getDocs(collection(db, "songs"));

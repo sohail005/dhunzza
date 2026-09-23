@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Shuffle } from "lucide-react";
 import { useRadio } from "@/hooks/useRadio";
 import { getSongsOnce } from "@/lib/firebase/songsCache";
+import { isPlayableSong } from "@/lib/firebase/songs";
 
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
@@ -29,7 +30,7 @@ export default function PlaylistSelector({ className = "" }: { className?: strin
     setIsLoading(true);
     setStatusMessage(null);
     try {
-      const songs = await getSongsOnce();
+      const songs = (await getSongsOnce()).filter(isPlayableSong);
       if (songs.length === 0) {
         setStatusMessage("No songs uploaded yet.");
         return;
