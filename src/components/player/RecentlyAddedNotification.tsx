@@ -119,20 +119,20 @@ export default function RecentlyAddedNotification({
               <Sparkles size={10} className="sm:hidden" />
               <Sparkles size={11} className="hidden sm:block" />
               Recently added
-              {extraCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setIsListOpen((open) => !open)}
-                  aria-expanded={isListOpen}
-                  className="text-[10px] whitespace-nowrap text-white/50 normal-case underline decoration-white/30 underline-offset-2 transition-colors hover:text-white sm:text-[12px]"
-                >
-                  · +{extraCount} more
-                </button>
-              )}
+              {extraCount > 0 && <span className="text-white/40 normal-case">· +{extraCount}</span>}
             </p>
             <p className="truncate text-[12px] font-medium text-white sm:text-[14px]">{latest?.title}</p>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsListOpen((open) => !open)}
+          aria-expanded={isListOpen}
+          className="liquid-glass flex h-7 shrink-0 items-center justify-center rounded-full px-2.5 text-[10px] font-medium whitespace-nowrap text-white transition-transform active:scale-90 sm:h-8 sm:px-3 sm:text-[12px]"
+        >
+          View all
+        </button>
 
         <button
           type="button"
@@ -155,7 +155,7 @@ export default function RecentlyAddedNotification({
         </button>
       </div>
 
-      {isListOpen && extraCount > 0 && renderOverlay()}
+      {isListOpen && renderOverlay()}
     </div>
   );
 

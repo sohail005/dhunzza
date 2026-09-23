@@ -10,6 +10,7 @@ import MarqueeText from "@/components/player/MarqueeText";
 import RainEffect from "@/components/RainEffect";
 import PlaylistSelector from "@/components/PlaylistSelector";
 import EraSelector from "@/components/EraSelector";
+import AllSongsBrowser from "@/components/AllSongsBrowser";
 import { ERA_BY_ID } from "@/lib/eras";
 
 function copyToClipboard(text: string): boolean {
@@ -93,18 +94,18 @@ export default function RadioPlayer() {
       aria-label="Now playing"
       className="absolute inset-x-3 bottom-6 z-40 sm:inset-x-6 sm:top-[68%] sm:bottom-auto sm:-translate-y-1/2"
     >
-      <div className="relative mx-auto flex w-full max-w-2xl flex-nowrap items-center justify-center gap-1 sm:flex-wrap sm:gap-2">
+      <div className="relative mx-auto flex w-full max-w-2xl flex-nowrap items-center justify-center gap-2 sm:flex-wrap sm:gap-3">
         <EraSelector className="w-auto shrink" />
         <PlaylistSelector className="w-auto shrink" />
+        <AllSongsBrowser className="w-auto shrink" />
         <RainEffect />
         <button
           type="button"
           onClick={handleShare}
-          className="liquid-glass flex shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-[11px] whitespace-nowrap text-white/95 sm:gap-2 sm:px-4 sm:text-[16px]"
+          aria-label="Share"
+          className="liquid-glass flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/95 sm:h-8 sm:w-8"
         >
-          <Share2 size={12} className="shrink-0 sm:hidden" />
-          <Share2 size={13} className="hidden shrink-0 sm:block" />
-          Share
+          <Share2 size={14} className="shrink-0" />
         </button>
 
         {shareMessage && (

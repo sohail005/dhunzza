@@ -236,6 +236,7 @@ input[type="range"]::-moz-range-thumb {
     content: "";
     position: absolute;
     inset: 0;
+    border-radius: inherit;
     pointer-events: none;
     background: linear-gradient(
       115deg,
