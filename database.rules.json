@@ -21,6 +21,7 @@
     },
     "songRequests": {
       ".indexOn": ["normalizedSongName", "createdAt"],
+      ".read": "auth != null && auth.token.admin === true",
       "$requestId": {
         ".read": "auth != null && auth.token.admin === true",
         ".write": "auth != null && auth.token.admin === true",

@@ -18,6 +18,12 @@ export interface SongRequest {
   sessionId: string | null;
   /** Firestore song id, set once an admin upload fulfills this request. */
   songId: string | null;
+  /** Epoch ms the request was last claimed/fulfilled by an admin — also
+   * doubles as the claim timestamp while status is "reviewing", used to
+   * detect and recover abandoned claims (see songRequestsAdmin.ts). */
+  reviewedAt?: number | null;
+  /** Admin email who claimed or fulfilled this request. */
+  reviewedBy?: string | null;
 }
 
 /** Fields the client is allowed to submit. Everything else on SongRequest

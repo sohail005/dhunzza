@@ -1,4 +1,4 @@
-export type ChatStep = "song" | "name" | "confirm" | "submitting" | "success" | "error";
+export type ChatStep = "form" | "submitting" | "success" | "error";
 
 export interface ChatMessage {
   id: string;

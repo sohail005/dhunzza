@@ -8,11 +8,14 @@ import { deleteSong as deleteSongRequest, fetchAllSongsOnce } from "@/lib/fireba
 import type { Song } from "@/types/music";
 import UploadForm from "@/components/admin/UploadForm";
 import SongTable from "@/components/admin/SongTable";
+import SongRequestsPanel from "@/components/admin/SongRequestsPanel";
 
 interface ToastState {
   message: string;
   kind: "success" | "error";
 }
+
+type DashboardTab = "songs" | "requests";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -20,6 +23,7 @@ export default function AdminDashboardPage() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [tab, setTab] = useState<DashboardTab>("songs");
 
   const showToast = useCallback((message: string, kind: "success" | "error") => {
     setToast({ message, kind });
@@ -79,11 +83,31 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
-        <div className="mb-6">
-          <UploadForm onUploaded={handleUploaded} onToast={showToast} />
+        <div className="mb-6 flex gap-1 rounded-full border border-white/15 bg-black/20 p-1 text-sm">
+          {(["songs", "requests"] as DashboardTab[]).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setTab(option)}
+              className={`flex-1 rounded-full py-1.5 capitalize transition ${
+                tab === option ? "bg-[var(--accent)] font-semibold text-black" : "text-white/60"
+              }`}
+            >
+              {option === "requests" ? "Song Requests" : "Songs"}
+            </button>
+          ))}
         </div>
 
-        <SongTable songs={songs} isLoading={isLoading} onDelete={handleDeleteSong} />
+        {tab === "songs" ? (
+          <>
+            <div className="mb-6">
+              <UploadForm onUploaded={handleUploaded} onToast={showToast} />
+            </div>
+            <SongTable songs={songs} isLoading={isLoading} onDelete={handleDeleteSong} />
+          </>
+        ) : (
+          <SongRequestsPanel onUploaded={handleUploaded} onToast={showToast} />
+        )}
       </div>
 
       {toast && (

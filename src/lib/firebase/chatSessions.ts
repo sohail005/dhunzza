@@ -1,6 +1,6 @@
 "use client";
 
-import { get, ref as dbRef, remove as dbRemove, set as dbSet } from "firebase/database";
+import { get, onValue, ref as dbRef, remove as dbRemove, set as dbSet } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import type { ChatMessage, ChatStep } from "@/types/chat";
 
@@ -20,7 +20,7 @@ export interface ChatSessionState {
   requesterName: string;
 }
 
-const VALID_STEPS = new Set<ChatStep>(["song", "name", "confirm", "submitting", "success", "error"]);
+const VALID_STEPS = new Set<ChatStep>(["form", "submitting", "success", "error"]);
 
 function isValidMessage(value: unknown): value is ChatMessage {
   if (!value || typeof value !== "object") return false;
@@ -38,6 +38,46 @@ function isValidMessage(value: unknown): value is ChatMessage {
   );
 }
 
+type RawSessionValue = {
+  step?: unknown;
+  messagesJson?: unknown;
+  songName?: unknown;
+  requesterName?: unknown;
+  updatedAt?: unknown;
+} | null;
+
+/** Shared parse/validate step for a raw RTDB snapshot value, used by both
+ * the one-shot load and the live subscription below. Expired or malformed
+ * records are treated as "nothing to resume" rather than surfaced as an
+ * error — this is a resumable draft, not critical state. */
+function parseSessionValue(sessionId: string, value: RawSessionValue): ChatSessionState | null {
+  if (!value) return null;
+
+  if (typeof value.updatedAt !== "number" || Date.now() - value.updatedAt > EXPIRY_MS) {
+    deleteChatSession(sessionId).catch(() => {});
+    return null;
+  }
+
+  if (typeof value.step !== "string" || !VALID_STEPS.has(value.step as ChatStep)) return null;
+  if (typeof value.messagesJson !== "string") return null;
+  if (typeof value.songName !== "string" || typeof value.requesterName !== "string") return null;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value.messagesJson);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed) || !parsed.every(isValidMessage)) return null;
+
+  return {
+    step: value.step as ChatStep,
+    messages: parsed,
+    songName: value.songName,
+    requesterName: value.requesterName,
+  };
+}
+
 /**
  * Loads a previously saved conversation for this browser session, if any
  * and not expired. Sessions are keyed by the same anonymous session id
@@ -50,35 +90,29 @@ export async function loadChatSession(sessionId: string): Promise<ChatSessionSta
 
   try {
     const snapshot = await get(dbRef(rtdb, `${SESSIONS_PATH}/${sessionId}`));
-    const value = snapshot.val() as
-      | { step?: unknown; messagesJson?: unknown; songName?: unknown; requesterName?: unknown; updatedAt?: unknown }
-      | null;
-    if (!value) return null;
-
-    if (typeof value.updatedAt !== "number" || Date.now() - value.updatedAt > EXPIRY_MS) {
-      deleteChatSession(sessionId).catch(() => {});
-      return null;
-    }
-
-    if (typeof value.step !== "string" || !VALID_STEPS.has(value.step as ChatStep)) return null;
-    if (typeof value.messagesJson !== "string") return null;
-    if (typeof value.songName !== "string" || typeof value.requesterName !== "string") return null;
-
-    const parsed: unknown = JSON.parse(value.messagesJson);
-    if (!Array.isArray(parsed) || !parsed.every(isValidMessage)) return null;
-
-    return {
-      step: value.step as ChatStep,
-      messages: parsed,
-      songName: value.songName,
-      requesterName: value.requesterName,
-    };
+    return parseSessionValue(sessionId, snapshot.val() as RawSessionValue);
   } catch {
     // Corrupt data, offline, or the RTDB rules for chatSessions haven't
     // been deployed yet — resuming is a nice-to-have, fall back to a fresh
     // conversation rather than surfacing an error to the user.
     return null;
   }
+}
+
+/**
+ * Live-subscribes to this browser session's saved conversation — used so an
+ * admin appending a "song added" notification (see appendSongAddedMessage)
+ * shows up in an already-open chat immediately, instead of only on the next
+ * page load. Returns an unsubscribe function.
+ */
+export function subscribeToChatSession(
+  sessionId: string,
+  onChange: (state: ChatSessionState | null) => void
+): () => void {
+  if (!sessionId) return () => {};
+  return onValue(dbRef(rtdb, `${SESSIONS_PATH}/${sessionId}`), (snapshot) => {
+    onChange(parseSessionValue(sessionId, snapshot.val() as RawSessionValue));
+  });
 }
 
 export async function saveChatSession(sessionId: string, state: ChatSessionState): Promise<void> {

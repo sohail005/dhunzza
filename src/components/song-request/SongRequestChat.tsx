@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { Music, Send, WifiOff, X } from "lucide-react";
 import ChatMessage from "@/components/song-request/ChatMessage";
 import CommunityFeedMessage from "@/components/song-request/CommunityFeedMessage";
-import ChatInput from "@/components/song-request/ChatInput";
 import TypingIndicator from "@/components/song-request/TypingIndicator";
 import { useSongRequestChat } from "@/hooks/useSongRequestChat";
 import type { ChatMessage as ChatMessageType } from "@/types/chat";
@@ -69,7 +68,7 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
   useEffect(() => {
     if (!isOpen) return;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [isOpen, timeline.length, chat.step, chat.isEditing]);
+  }, [isOpen, timeline.length, chat.step]);
 
   return (
     <div
@@ -142,6 +141,7 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
                     message={item.message}
                     songName={chat.songName}
                     requesterName={chat.requesterName}
+                    onPlay={onClose}
                   />
                 )
               )}
@@ -178,57 +178,12 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
             </p>
           )}
 
-          {chat.step === "song" && (
-            <ChatInput
-              key="song-input"
-              placeholder="Enter song name…"
-              buttonLabel="Next"
-              minLength={SONG_MIN}
-              maxLength={SONG_MAX}
-              suggestions={SONG_SUGGESTIONS}
-              onSubmit={chat.submitSong}
+          {chat.step === "form" && (
+            <RequestForm
+              cooldownSeconds={chat.cooldownSeconds}
+              onSubmit={chat.send}
             />
           )}
-
-          {chat.step === "name" && (
-            <ChatInput
-              key="name-input"
-              placeholder="Enter your name…"
-              buttonLabel="Continue"
-              minLength={NAME_MIN}
-              maxLength={NAME_MAX}
-              onSubmit={chat.submitName}
-            />
-          )}
-
-          {chat.step === "confirm" &&
-            (chat.isEditing ? (
-              <EditForm
-                songName={chat.songName}
-                requesterName={chat.requesterName}
-                onCancel={chat.cancelEdit}
-                onSave={chat.saveEdit}
-              />
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={chat.startEdit}
-                  className="liquid-glass flex-1 rounded-full py-2.5 text-sm font-semibold text-white transition"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={chat.send}
-                  disabled={chat.cooldownSeconds > 0}
-                  className="liquid-glass liquid-glass-accent flex flex-[2] items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Send size={14} />
-                  {chat.cooldownSeconds > 0 ? `Wait ${chat.cooldownSeconds}s` : "Send Request"}
-                </button>
-              </div>
-            ))}
 
           {chat.step === "submitting" && (
             <button
@@ -275,58 +230,95 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
   );
 }
 
-function EditForm({
-  songName,
-  requesterName,
-  onCancel,
-  onSave,
+function RequestForm({
+  cooldownSeconds,
+  onSubmit,
 }: {
-  songName: string;
-  requesterName: string;
-  onCancel: () => void;
-  onSave: (songName: string, requesterName: string) => void;
+  cooldownSeconds: number;
+  onSubmit: (songName: string, requesterName: string) => void;
 }) {
-  const [song, setSong] = useState(songName);
-  const [name, setName] = useState(requesterName);
-  const isValid = song.trim().length >= SONG_MIN && name.trim().length >= NAME_MIN;
+  const [song, setSong] = useState("");
+  const [name, setName] = useState("");
+  const [touched, setTouched] = useState(false);
+  const songInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    songInputRef.current?.focus();
+  }, []);
+
+  const trimmedSong = song.trim();
+  const trimmedName = name.trim();
+  const songValid = trimmedSong.length >= SONG_MIN && trimmedSong.length <= SONG_MAX;
+  const nameValid = trimmedName.length >= NAME_MIN && trimmedName.length <= NAME_MAX;
+  const isValid = songValid && nameValid;
+
+  function submit() {
+    setTouched(true);
+    if (!isValid || cooldownSeconds > 0) return;
+    onSubmit(trimmedSong, trimmedName);
+  }
 
   return (
     <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        <span className="text-[11px] font-medium text-white/70">Try:</span>
+        {SONG_SUGGESTIONS.map((suggestion) => (
+          <button
+            key={suggestion}
+            type="button"
+            onClick={() => setSong(suggestion)}
+            className="liquid-glass rounded-full px-2.5 py-1 text-[11px] font-medium text-white transition hover:border-white/40"
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
+
       <input
+        ref={songInputRef}
         type="text"
         value={song}
         maxLength={SONG_MAX}
         onChange={(event) => setSong(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") submit();
+        }}
         placeholder="Song name"
-        aria-label="Edit song name"
-        className="liquid-glass w-full rounded-full px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/40"
+        aria-label="Song name"
+        aria-invalid={touched && !songValid}
+        className="liquid-glass w-full rounded-full px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/40 focus-within:border-(--accent)/60"
       />
       <input
         type="text"
         value={name}
         maxLength={NAME_MAX}
         onChange={(event) => setName(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") submit();
+        }}
         placeholder="Your name"
-        aria-label="Edit your name"
-        className="liquid-glass w-full rounded-full px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/40"
+        aria-label="Your name"
+        aria-invalid={touched && !nameValid}
+        className="liquid-glass w-full rounded-full px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/40 focus-within:border-(--accent)/60"
       />
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="liquid-glass flex-1 rounded-full py-2 text-sm font-semibold text-white transition"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          disabled={!isValid}
-          onClick={() => onSave(song, name)}
-          className="liquid-glass liquid-glass-accent flex-1 rounded-full py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Save changes
-        </button>
-      </div>
+
+      {touched && !isValid && (
+        <p className="px-1 text-xs text-amber-300">
+          {!songValid && `Song name must be ${SONG_MIN}-${SONG_MAX} characters.`}
+          {!songValid && !nameValid && " "}
+          {!nameValid && `Your name must be ${NAME_MIN}-${NAME_MAX} characters.`}
+        </p>
+      )}
+
+      <button
+        type="button"
+        onClick={submit}
+        disabled={cooldownSeconds > 0}
+        className="liquid-glass liquid-glass-accent flex w-full items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Send size={14} />
+        {cooldownSeconds > 0 ? `Wait ${cooldownSeconds}s` : "Send Request"}
+      </button>
     </div>
   );
 }

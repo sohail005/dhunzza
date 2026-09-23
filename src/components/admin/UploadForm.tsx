@@ -5,11 +5,23 @@ import { UploadCloud } from "lucide-react";
 import type { EraId, Mood, Song } from "@/types/music";
 import { MAX_UPLOAD_BYTES, uploadSong } from "@/lib/firebase/songs";
 import { fulfillMatchingSongRequests } from "@/lib/firebase/songRequestFulfillment";
+import { fulfillSongRequest } from "@/lib/firebase/songRequestsAdmin";
 import { DEFAULT_ERA, ERAS, MOODS } from "@/lib/eras";
+
+/** When set, this upload is fulfilling a claimed song request — the
+ * requester name comes from the trusted request record (read-only, never
+ * editable), and completion calls fulfillSongRequest instead of the
+ * best-effort title-matching fallback. */
+export interface RequestContext {
+  requestId: string;
+  requesterName: string;
+  songName: string;
+}
 
 interface UploadFormProps {
   onUploaded: (song: Song) => void;
   onToast: (message: string, kind: "success" | "error") => void;
+  request?: RequestContext | null;
 }
 
 function formatFileSize(bytes: number): string {
@@ -17,9 +29,9 @@ function formatFileSize(bytes: number): string {
   return `${mb.toFixed(mb < 10 ? 2 : 1)} MB`;
 }
 
-export default function UploadForm({ onUploaded, onToast }: UploadFormProps) {
+export default function UploadForm({ onUploaded, onToast, request = null }: UploadFormProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(request?.songName ?? "");
   const [artist, setArtist] = useState("");
   const [era, setEra] = useState<EraId>(DEFAULT_ERA);
   const [mood, setMood] = useState<Mood>("neutral");
@@ -67,16 +79,34 @@ export default function UploadForm({ onUploaded, onToast }: UploadFormProps) {
         onProgress: setProgress,
       });
       onUploaded(song);
-      onToast(`"${song.title}" uploaded.`, "success");
+
+      if (request) {
+        // Re-reads the claimed request server-side and verifies this admin
+        // still owns it before marking it fulfilled — never trusts the
+        // in-memory request prop alone.
+        setProgress(100);
+        try {
+          await fulfillSongRequest({ requestId: request.requestId, songId: song.id, songTitle: song.title });
+          onToast("Song added successfully and the requester has been notified.", "success");
+        } catch (fulfillError) {
+          const message =
+            fulfillError instanceof Error
+              ? fulfillError.message
+              : "The song was uploaded, but the request couldn't be marked fulfilled.";
+          onToast(message, "error");
+        }
+      } else {
+        onToast(`"${song.title}" uploaded.`, "success");
+        // Best-effort — closes the loop on any pending chatbot request for
+        // this song. Never blocks or fails the upload itself.
+        fulfillMatchingSongRequests(song.title, song.id).catch(() => {});
+      }
+
       setFile(null);
-      setTitle("");
+      setTitle(request?.songName ?? "");
       setArtist("");
       setMood("neutral");
       if (fileInputRef.current) fileInputRef.current.value = "";
-
-      // Best-effort — closes the loop on any pending chatbot request for
-      // this song. Never blocks or fails the upload itself.
-      fulfillMatchingSongRequests(song.title, song.id).catch(() => {});
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed.";
       setError(message);
@@ -88,7 +118,23 @@ export default function UploadForm({ onUploaded, onToast }: UploadFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="liquid-glass-card rounded-2xl p-5 text-white">
-      <h2 className="mb-4 text-sm font-semibold text-white/80 uppercase">Upload MP3</h2>
+      <h2 className="mb-4 text-sm font-semibold text-white/80 uppercase">
+        {request ? "Add Requested Song" : "Upload MP3"}
+      </h2>
+
+      {request && (
+        <label className="mb-4 block text-sm">
+          <span className="mb-1 block text-white/60">Requested by</span>
+          <input
+            type="text"
+            value={request.requesterName}
+            readOnly
+            disabled
+            aria-readonly="true"
+            className="w-full cursor-not-allowed rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-white/70 outline-none"
+          />
+        </label>
+      )}
 
       <div
         onDragOver={(event) => {
@@ -191,7 +237,13 @@ export default function UploadForm({ onUploaded, onToast }: UploadFormProps) {
         disabled={progress !== null}
         className="liquid-glass liquid-glass-accent w-full rounded-xl py-2.5 text-sm font-semibold disabled:opacity-60"
       >
-        {progress !== null ? "Uploading…" : "Upload"}
+        {progress === null
+          ? request
+            ? "Add Song"
+            : "Upload"
+          : progress < 100
+            ? `Uploading… ${progress}%`
+            : "Saving Song…"}
       </button>
     </form>
   );

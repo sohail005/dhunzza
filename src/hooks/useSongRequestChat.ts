@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage, ChatStep } from "@/types/chat";
 import type { CommunityRequestEvent } from "@/types/communityFeed";
-import { loadChatSession, saveChatSession } from "@/lib/firebase/chatSessions";
+import { loadChatSession, saveChatSession, subscribeToChatSession } from "@/lib/firebase/chatSessions";
 import { subscribeToCommunityFeed } from "@/lib/firebase/communityFeed";
 
 const SESSION_KEY = "dhunzza.session-id";
@@ -13,10 +13,7 @@ const LAST_SUBMIT_KEY = "dhunzza.song-request.last-submit";
 // disables itself instantly instead of waiting on a 429 round-trip.
 const COOLDOWN_MS = 45_000;
 
-const GREETING =
-  "Hey! \u{1F44B} Want to help us grow Dhunzza? Tell me a song you'd love to see here.";
-const ASK_NAME = "Nice choice! \u{1F3B5} Who should we credit this request to?";
-const CONFIRM_INTRO = "Almost done! ✨ Here's your request:";
+const GREETING = "Hey! \u{1F44B} Want to help us grow Dhunzza? Tell us the song and your name below.";
 const GENERIC_ERROR = "Hmm, something went wrong while sending your request. \u{1F615} Please try again.";
 const OFFLINE_ERROR = "You appear to be offline. Please reconnect and try again.";
 
@@ -35,11 +32,10 @@ function makeMessage(role: ChatMessage["role"], content: string, type: ChatMessa
 }
 
 export function useSongRequestChat() {
-  const [step, setStep] = useState<ChatStep>("song");
+  const [step, setStep] = useState<ChatStep>("form");
   const [messages, setMessages] = useState<ChatMessage[]>(() => [makeMessage("bot", GREETING)]);
   const [songName, setSongName] = useState("");
   const [requesterName, setRequesterName] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [duplicateNotice, setDuplicateNotice] = useState(false);
   // Both start at a fixed, SSR-safe default and are corrected from the real
@@ -100,7 +96,10 @@ export function useSongRequestChat() {
     (async () => {
       const saved = await loadChatSession(getSessionId());
       if (cancelled || !saved) return;
-      setStep(saved.step);
+      // A resumed "submitting" step means the tab closed mid-request —
+      // there's no in-flight promise to reattach to, so land back on the
+      // form rather than getting stuck on a permanent spinner.
+      setStep(saved.step === "submitting" ? "form" : saved.step);
       setMessages(saved.messages);
       setSongName(saved.songName);
       setRequesterName(saved.requesterName);
@@ -110,9 +109,28 @@ export function useSongRequestChat() {
     };
   }, []);
 
+  // Live-merges messages an admin appends server-side (e.g. a "song added"
+  // notification — see appendSongAddedMessage) into an already-open chat.
+  // Only ever adds messages this tab doesn't already know about; step/song/
+  // name stay locally driven so a concurrent remote write can't yank the
+  // visitor out of whatever they're doing mid-conversation.
+  useEffect(() => {
+    const sessionId = getSessionId();
+    if (!sessionId) return;
+    return subscribeToChatSession(sessionId, (remote) => {
+      if (!remote) return;
+      setMessages((prev) => {
+        const knownIds = new Set(prev.map((message) => message.id));
+        const newOnes = remote.messages.filter((message) => !knownIds.has(message.id));
+        if (newOnes.length === 0) return prev;
+        return [...prev, ...newOnes].sort((a, b) => a.timestamp - b.timestamp);
+      });
+    });
+  }, []);
+
   // Persist the resumable parts of the conversation after every change —
   // writes are infrequent (only on submit-style actions, not keystrokes,
-  // since ChatInput keeps its own draft value locally) so no debouncing.
+  // since the form keeps its own draft values locally) so no debouncing.
   useEffect(() => {
     saveChatSession(getSessionId(), { step, messages, songName, requesterName });
   }, [step, messages, songName, requesterName]);
@@ -122,40 +140,7 @@ export function useSongRequestChat() {
     return Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
   }, [cooldownUntil, now]);
 
-  const submitSong = useCallback((value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    setSongName(trimmed);
-    setMessages((prev) => [...prev, makeMessage("user", trimmed), makeMessage("bot", ASK_NAME)]);
-    setStep("name");
-  }, []);
-
-  const submitName = useCallback((value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    setRequesterName(trimmed);
-    setMessages((prev) => [
-      ...prev,
-      makeMessage("user", trimmed),
-      makeMessage("bot", CONFIRM_INTRO),
-      makeMessage("bot", "", "request-preview"),
-    ]);
-    setStep("confirm");
-  }, []);
-
-  const startEdit = useCallback(() => setIsEditing(true), []);
-  const cancelEdit = useCallback(() => setIsEditing(false), []);
-
-  const saveEdit = useCallback((nextSongName: string, nextRequesterName: string) => {
-    const song = nextSongName.trim();
-    const name = nextRequesterName.trim();
-    if (!song || !name) return;
-    setSongName(song);
-    setRequesterName(name);
-    setIsEditing(false);
-  }, []);
-
-  const send = useCallback(async () => {
+  const send = useCallback(async (song: string, name: string) => {
     if (submitLock.current) return;
     if (!navigator.onLine) {
       setErrorText(OFFLINE_ERROR);
@@ -165,13 +150,16 @@ export function useSongRequestChat() {
 
     submitLock.current = true;
     setErrorText(null);
+    setSongName(song);
+    setRequesterName(name);
+    setMessages((prev) => [...prev, makeMessage("bot", "", "request-preview")]);
     setStep("submitting");
 
     try {
       const response = await fetch("/api/song-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ songName, requesterName, sessionId: getSessionId() }),
+        body: JSON.stringify({ songName: song, requesterName: name, sessionId: getSessionId() }),
       });
       const data = await response.json().catch(() => null);
 
@@ -189,7 +177,7 @@ export function useSongRequestChat() {
         ...prev,
         makeMessage(
           "bot",
-          `Request sent successfully! \u{1F389} Thanks, ${requesterName}! Your request for \u{1F3B5} ${songName} has been received. We'll review it and consider adding it to Dhunzza.`
+          `Request sent successfully! \u{1F389} Thanks, ${name}! Your request for \u{1F3B5} ${song} has been received. We'll review it and consider adding it to Dhunzza.`
         ),
       ]);
       setStep("success");
@@ -199,21 +187,23 @@ export function useSongRequestChat() {
     } finally {
       submitLock.current = false;
     }
-  }, [songName, requesterName]);
+  }, []);
 
   const retry = useCallback(() => {
     setErrorText(null);
-    setStep("confirm");
+    // Drop the request-preview bubble pushed just before the failed attempt
+    // so retrying from the form doesn't leave a stale duplicate behind.
+    setMessages((prev) => prev.filter((message) => message.type !== "request-preview"));
+    setStep("form");
   }, []);
 
   const reset = useCallback(() => {
     setSongName("");
     setRequesterName("");
-    setIsEditing(false);
     setErrorText(null);
     setDuplicateNotice(false);
     setMessages([makeMessage("bot", GREETING)]);
-    setStep("song");
+    setStep("form");
   }, []);
 
   return {
@@ -222,16 +212,10 @@ export function useSongRequestChat() {
     communityFeed,
     songName,
     requesterName,
-    isEditing,
     errorText,
     duplicateNotice,
     cooldownSeconds,
     isOnline,
-    submitSong,
-    submitName,
-    startEdit,
-    cancelEdit,
-    saveEdit,
     send,
     retry,
     reset,

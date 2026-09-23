@@ -12,9 +12,18 @@ interface ChatMessageProps {
   message: ChatMessageType;
   songName?: string;
   requesterName?: string;
+  onPlay?: () => void;
 }
 
-function SongAddedMessage({ songName, songId }: { songName: string; songId: string }) {
+function SongAddedMessage({
+  songName,
+  songId,
+  onPlay,
+}: {
+  songName: string;
+  songId: string;
+  onPlay?: () => void;
+}) {
   const { playRecentlyAddedSong } = useRadio();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
 
@@ -28,6 +37,7 @@ function SongAddedMessage({ songName, songId }: { songName: string; songId: stri
       }
       playRecentlyAddedSong(song);
       setStatus("idle");
+      onPlay?.();
     } catch {
       setStatus("error");
     }
@@ -39,7 +49,7 @@ function SongAddedMessage({ songName, songId }: { songName: string; songId: stri
         <Music size={16} />
       </span>
       <div className="min-w-0">
-        <p className="text-xs text-white/60">🎉 Your request is on Dhunzza!</p>
+        <p className="text-xs text-white/80">🎉 Your request is on Dhunzza!</p>
         <p className="truncate text-sm font-semibold text-white">{songName}</p>
         {status === "error" && <p className="text-xs text-red-400">Couldn&apos;t load this song.</p>}
       </div>
@@ -60,7 +70,7 @@ function SongAddedMessage({ songName, songId }: { songName: string; songId: stri
   );
 }
 
-export default function ChatMessage({ message, songName, requesterName }: ChatMessageProps) {
+export default function ChatMessage({ message, songName, requesterName, onPlay }: ChatMessageProps) {
   const reduceMotion = useReducedMotion();
   const isBot = message.role === "bot";
 
@@ -91,7 +101,7 @@ export default function ChatMessage({ message, songName, requesterName }: ChatMe
         transition={{ duration: 0.3, ease: "easeOut" }}
         className="flex justify-start"
       >
-        <SongAddedMessage songName={message.content ?? ""} songId={message.songId} />
+        <SongAddedMessage songName={message.content ?? ""} songId={message.songId} onPlay={onPlay} />
       </motion.div>
     );
   }
