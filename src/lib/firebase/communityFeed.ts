@@ -3,6 +3,7 @@
 import { limitToLast, onValue, query, ref as dbRef } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import type { CommunityRequestEvent } from "@/types/communityFeed";
+import { debugLog } from "@/lib/firebase/debugLog";
 
 const FEED_PATH = "publicRequestFeed";
 // Enough to give new visitors a sense of recent activity without pulling
@@ -29,7 +30,8 @@ function isValidEvent(key: string | null, value: unknown): value is Omit<Communi
 export function subscribeToCommunityFeed(onEvents: (events: CommunityRequestEvent[]) => void): () => void {
   const feedQuery = query(dbRef(rtdb, FEED_PATH), limitToLast(FEED_LIMIT));
 
-  return onValue(
+  debugLog("communityFeed", "onValue: subscribing to public request feed");
+  const unsubscribe = onValue(
     feedQuery,
     (snapshot) => {
       const events: CommunityRequestEvent[] = [];
@@ -53,4 +55,8 @@ export function subscribeToCommunityFeed(onEvents: (events: CommunityRequestEven
       onEvents([]);
     }
   );
+  return () => {
+    debugLog("communityFeed", "onValue: unsubscribing from public request feed");
+    unsubscribe();
+  };
 }

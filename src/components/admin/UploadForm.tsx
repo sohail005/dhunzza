@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import type { EraId, Mood, Song } from "@/types/music";
-import { MAX_UPLOAD_BYTES, uploadSong } from "@/lib/firebase/songs";
+import { MAX_UPLOAD_BYTES, readAudioDuration, uploadSong } from "@/lib/firebase/songs";
 import { fulfillMatchingSongRequests } from "@/lib/firebase/songRequestFulfillment";
 import { fulfillSongRequest } from "@/lib/firebase/songRequestsAdmin";
 import { DEFAULT_ERA, ERAS, MOODS } from "@/lib/eras";
@@ -29,6 +29,18 @@ function formatFileSize(bytes: number): string {
   return `${mb.toFixed(mb < 10 ? 2 : 1)} MB`;
 }
 
+// Audio is stored/served as base64 through Realtime Database, which bills
+// (and free-tier-caps) by bytes downloaded on every play — every song
+// uploaded here gets streamed by every listener. Above this bitrate, the
+// file is larger than a background-listening use case needs, so a re-encode
+// meaningfully cuts ongoing bandwidth for no audible difference on typical
+// playback devices.
+const BITRATE_WARNING_THRESHOLD_BPS = 160_000; // 160 kbps
+
+function estimateBitrateBps(fileBytes: number, durationSeconds: number): number {
+  return (fileBytes * 8) / durationSeconds;
+}
+
 export default function UploadForm({ onUploaded, onToast, request = null }: UploadFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState(request?.songName ?? "");
@@ -38,6 +50,7 @@ export default function UploadForm({ onUploaded, onToast, request = null }: Uplo
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bitrateWarning, setBitrateWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function validateAndSetFile(candidate: File | null) {
@@ -51,8 +64,20 @@ export default function UploadForm({ onUploaded, onToast, request = null }: Uplo
       return;
     }
     setError(null);
+    setBitrateWarning(null);
     setFile(candidate);
     if (!title) setTitle(candidate.name.replace(/\.[^/.]+$/, ""));
+
+    readAudioDuration(candidate).then((duration) => {
+      if (!duration) return;
+      const bitrateBps = estimateBitrateBps(candidate.size, duration);
+      if (bitrateBps > BITRATE_WARNING_THRESHOLD_BPS) {
+        const kbps = Math.round(bitrateBps / 1000);
+        setBitrateWarning(
+          `This file is encoded at roughly ${kbps} kbps. Dhunzza streams every play through a bandwidth-limited free database — re-encoding to ~128 kbps before uploading would cut this file's size (and everyone's download cost) by roughly ${Math.round((1 - 128 / kbps) * 100)}% with no noticeable quality loss for background listening. You can still upload as-is.`
+        );
+      }
+    });
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -106,6 +131,7 @@ export default function UploadForm({ onUploaded, onToast, request = null }: Uplo
       setTitle(request?.songName ?? "");
       setArtist("");
       setMood("neutral");
+      setBitrateWarning(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed.";
@@ -229,6 +255,8 @@ export default function UploadForm({ onUploaded, onToast, request = null }: Uplo
           <p className="mt-1 text-xs text-white/50">{progress}%</p>
         </div>
       )}
+
+      {bitrateWarning && <p className="mb-4 text-xs text-amber-400">{bitrateWarning}</p>}
 
       {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 

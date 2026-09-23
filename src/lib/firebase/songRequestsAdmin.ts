@@ -14,6 +14,7 @@ import {
 import { auth, rtdb } from "@/lib/firebase/config";
 import { appendSongAddedMessage } from "@/lib/firebase/chatSessions";
 import type { SongRequest, SongRequestStatus } from "@/types/songRequest";
+import { debugLog } from "@/lib/firebase/debugLog";
 
 const REQUESTS_PATH = "songRequests";
 // Only the two active states are ever surfaced in the admin queue — fulfilled
@@ -52,7 +53,8 @@ export function subscribeToSongRequests(
   onError: (error: unknown) => void
 ): () => void {
   const q = query(dbRef(rtdb, REQUESTS_PATH), orderByChild("createdAt"), limitToLast(FETCH_LIMIT));
-  return onValue(
+  debugLog("songRequestsAdmin", "onValue: subscribing to admin request queue");
+  const unsubscribe = onValue(
     q,
     (snapshot) => {
       const items: AdminSongRequest[] = [];
@@ -66,6 +68,10 @@ export function subscribeToSongRequests(
     },
     onError
   );
+  return () => {
+    debugLog("songRequestsAdmin", "onValue: unsubscribing from admin request queue");
+    unsubscribe();
+  };
 }
 
 /**

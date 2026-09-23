@@ -4,7 +4,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getCountFromServer,
   getDoc,
   getDocs,
   onSnapshot,
@@ -18,7 +17,8 @@ import {
 import { get, ref as dbRef, remove as dbRemove, set as dbSet } from "firebase/database";
 import { auth, db, rtdb } from "@/lib/firebase/config";
 import type { EraId, Mood, Song } from "@/types/music";
-import { DEFAULT_ERA, ERAS } from "@/lib/eras";
+import { DEFAULT_ERA } from "@/lib/eras";
+import { debugLog } from "@/lib/firebase/debugLog";
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -67,23 +67,8 @@ function mapSongDoc(id: string, data: Record<string, unknown>): Song {
   };
 }
 
-export async function fetchSongsByEra(era: EraId): Promise<Song[]> {
-  const snapshot = await getDocs(query(collection(db, "songs"), where("era", "==", era)));
-  return snapshot.docs.map((docSnap) => mapSongDoc(docSnap.id, docSnap.data()));
-}
-
-/** Song count per era, via count aggregation queries — cheap, no document downloads. */
-export async function fetchSongCountsByEra(): Promise<Record<EraId, number>> {
-  const entries = await Promise.all(
-    ERAS.map(async ({ id }) => {
-      const snapshot = await getCountFromServer(query(collection(db, "songs"), where("era", "==", id)));
-      return [id, snapshot.data().count] as const;
-    })
-  );
-  return Object.fromEntries(entries) as Record<EraId, number>;
-}
-
 export async function fetchAllSongsOnce(): Promise<Song[]> {
+  debugLog("songs", "getDocs: full songs collection read");
   const snapshot = await getDocs(collection(db, "songs"));
   return snapshot.docs.map((docSnap) => mapSongDoc(docSnap.id, docSnap.data()));
 }
@@ -110,13 +95,19 @@ export function subscribeToNewSongs(
     where("createdAt", ">", Timestamp.fromMillis(sinceEpochMs)),
     orderBy("createdAt", "asc")
   );
-  return onSnapshot(q, (snapshot) => {
+  debugLog("songs", "onSnapshot: subscribing to new-songs listener");
+  const unsubscribe = onSnapshot(q, (snapshot) => {
     for (const change of snapshot.docChanges()) {
       if (change.type === "added") {
+        debugLog("songs", `onSnapshot: new song ${change.doc.id}`);
         onNewSong(mapSongDoc(change.doc.id, change.doc.data()));
       }
     }
   });
+  return () => {
+    debugLog("songs", "onSnapshot: unsubscribing new-songs listener");
+    unsubscribe();
+  };
 }
 
 /**
@@ -125,6 +116,7 @@ export function subscribeToNewSongs(
  * actually about to play, not when listing/browsing songs.
  */
 export async function fetchSongAudio(audioPath: string): Promise<string> {
+  debugLog("songs", `get: audio RTDB read ${audioPath}`);
   const snapshot = await get(dbRef(rtdb, audioPath));
   const value = snapshot.val() as { data?: string | string[]; contentType?: string } | null;
   if (!value?.data) throw new Error("This song's audio file is missing.");
@@ -134,6 +126,7 @@ export async function fetchSongAudio(audioPath: string): Promise<string> {
 
 /** Resolves a song's `thumbnailPath` to a displayable data: URI. */
 export async function fetchSongThumbnail(thumbnailPath: string): Promise<string | null> {
+  debugLog("songs", `get: thumbnail RTDB read ${thumbnailPath}`);
   const snapshot = await get(dbRef(rtdb, thumbnailPath));
   const value = snapshot.val() as { data?: string; contentType?: string } | null;
   if (!value?.data) return null;
@@ -141,7 +134,7 @@ export async function fetchSongThumbnail(thumbnailPath: string): Promise<string 
 }
 
 /** Reads an audio file's duration in seconds by loading it into a throwaway <audio> element. */
-function readAudioDuration(file: File): Promise<number | null> {
+export function readAudioDuration(file: File): Promise<number | null> {
   return new Promise((resolve) => {
     const objectUrl = URL.createObjectURL(file);
     const audio = new Audio();

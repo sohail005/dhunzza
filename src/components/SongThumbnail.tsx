@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Music } from "lucide-react";
-import { fetchSongThumbnail } from "@/lib/firebase/songs";
+import { getCachedSongThumbnail } from "@/lib/firebase/mediaCache";
 
 interface SongThumbnailProps {
   thumbnailPath: string | null;
@@ -20,7 +20,7 @@ export default function SongThumbnail({
   useEffect(() => {
     let cancelled = false;
     Promise.resolve()
-      .then(() => (thumbnailPath ? fetchSongThumbnail(thumbnailPath) : null))
+      .then(() => (thumbnailPath ? getCachedSongThumbnail(thumbnailPath) : null))
       .then((dataUri) => {
         if (!cancelled) setSrc(dataUri);
       })

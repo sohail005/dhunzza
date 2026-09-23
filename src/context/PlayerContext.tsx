@@ -10,13 +10,10 @@ import {
   type ReactNode,
 } from "react";
 import type { EraId, Song } from "@/types/music";
-import {
-  fetchAllSongsOnce,
-  fetchSongAudio,
-  fetchSongsByEra,
-  fetchSongThumbnail,
-  subscribeToNewSongs,
-} from "@/lib/firebase/songs";
+import { subscribeToNewSongs } from "@/lib/firebase/songs";
+import { getSongsOnce, upsertSongInCache } from "@/lib/firebase/songsCache";
+import { getCachedSongAudio, getCachedSongThumbnail } from "@/lib/firebase/mediaCache";
+import { debugLog } from "@/lib/firebase/debugLog";
 import NativeAudioPlayer, {
   type NativeAudioPlayerHandle,
 } from "@/components/player/NativeAudioPlayer";
@@ -42,12 +39,22 @@ const RECENTLY_ADDED_FALLBACK_WINDOW_MS = 24 * 60 * 60 * 1000;
 // (~8s) in TimeTravelOverlay.tsx.
 const ERA_TRAVEL_DURATION_MS = 4000;
 
-// Guards against fetchSongsByEra() hanging forever instead of rejecting —
+// Guards against getSongsOnce() hanging forever instead of rejecting —
 // e.g. a homescreen/PWA webapp getting backgrounded mid-request can suspend
 // the network connection without the underlying promise ever settling,
 // which would otherwise leave isTraveling stuck true (portal overlay stuck
 // on screen) until the page is reloaded.
 const ERA_FETCH_TIMEOUT_MS = 10000;
+
+// Once passive auto-advance (song-ended, not a manual skip) has pulled this
+// many not-yet-played songs from Realtime Database this "queue session,"
+// further auto-advances loop back over the already-played (and thus already
+// cached, see mediaCache.ts) subset instead of continuing into fresh,
+// never-downloaded songs — bounds worst-case RTDB egress from someone
+// leaving the radio running unattended. Manual next()/previous() clicks are
+// never capped — an actively engaged listener can still reach the full
+// catalog.
+const FRESH_AUTOPLAY_LIMIT = 5;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -106,6 +113,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const audioHandleRef = useRef<NativeAudioPlayerHandle>(null);
   const loadedSongIdRef = useRef<string | null>(null);
   const skipAttemptsRef = useRef(0);
+  // Count of passive auto-advances since the current queue was set, and the
+  // set of queue indices actually played so far — both reset on every fresh
+  // playQueue() call. See FRESH_AUTOPLAY_LIMIT.
+  const freshAutoplayCountRef = useRef(0);
+  const playedIndicesRef = useRef<Set<number>>(new Set());
   const hasRestoredRef = useRef(false);
   const tabIdRef = useRef<string | null>(null);
   const playbackChannelRef = useRef<BroadcastChannel | null>(null);
@@ -148,6 +160,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
       const normalizedIndex = ((index % nextQueue.length) + nextQueue.length) % nextQueue.length;
       const song = nextQueue[normalizedIndex];
+      playedIndicesRef.current.add(normalizedIndex);
 
       // Cut the outgoing song immediately (fading, not a hard stop) —
       // without this, the <audio> element keeps playing its old src for as
@@ -165,7 +178,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
 
       try {
-        const audioSrc = await fetchSongAudio(song.audioPath);
+        const audioSrc = await getCachedSongAudio(song.audioPath);
         // If the user jumped to a different song while this was in
         // flight, don't clobber whatever loaded after it.
         if (loadedSongIdRef.current !== song.id) return;
@@ -183,6 +196,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const playQueue = useCallback(
     (songs: Song[], era: EraId | null = null, startIndex = 0) => {
+      freshAutoplayCountRef.current = 0;
+      playedIndicesRef.current = new Set();
       setQueue(songs);
       setCurrentEra(era ?? songs[0]?.era ?? null);
       goToIndex(songs, startIndex, true);
@@ -193,7 +208,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const tuneIn = useCallback(async () => {
     setHasTunedIn(true);
     try {
-      const songs = await fetchAllSongsOnce();
+      const songs = await getSongsOnce();
       if (songs.length === 0) {
         setPlaybackUnavailable(true);
         return;
@@ -217,7 +232,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setIsPlaying(false);
       (async () => {
         try {
-          const songs = await withTimeout(fetchSongsByEra(era), ERA_FETCH_TIMEOUT_MS);
+          // Derived from the shared songs cache (already loaded/reused by
+          // tune-in, admin, and browse-all) rather than a separate
+          // where("era", "==", era) Firestore query — repeat era switches,
+          // including re-visiting an era already seen this session, cost
+          // zero additional reads once the cache is warm.
+          const allSongs = await withTimeout(getSongsOnce(), ERA_FETCH_TIMEOUT_MS);
+          const songs = allSongs.filter((song) => song.era === era);
           await new Promise((resolve) => window.setTimeout(resolve, ERA_TRAVEL_DURATION_MS));
           if (songs.length === 0) {
             setCurrentEra(era);
@@ -342,7 +363,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           // after this was written to localStorage. Reconcile against what
           // actually still exists so deleted songs don't linger forever.
           try {
-            const liveSongs = await fetchAllSongsOnce();
+            const liveSongs = await getSongsOnce();
             const liveIds = new Set(liveSongs.map((s) => s.id));
             const stillValid = restoredQueue.filter((s) => liveIds.has(s.id));
             if (stillValid.length !== restoredQueue.length) {
@@ -372,7 +393,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       // prompt. Cueing doesn't need a user gesture; only play() does, which
       // the visible Play button provides.
       try {
-        const songs = await fetchAllSongsOnce();
+        const songs = await getSongsOnce();
         if (songs.length > 0) {
           const shuffled = shuffle(songs);
           setQueue(shuffled);
@@ -399,6 +420,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const sinceEpochMs = stored > 0 ? stored : Date.now() - RECENTLY_ADDED_FALLBACK_WINDOW_MS;
 
     const unsubscribe = subscribeToNewSongs(sinceEpochMs, (song) => {
+      upsertSongInCache(song);
       setRecentlyAdded((prev) => (prev.some((s) => s.id === song.id) ? prev : [...prev, song]));
       setNewSongNotification((prev) =>
         prev.some((s) => s.id === song.id) ? prev : [...prev, song]
@@ -540,11 +562,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setMetadata(`${window.location.origin}/dhunzza.webp`, "image/webp");
 
     if (currentSong.thumbnailPath) {
-      fetchSongThumbnail(currentSong.thumbnailPath)
-        .then((dataUri) => {
-          if (!dataUri) return;
-          const mimeMatch = /^data:([^;]+);/.exec(dataUri);
-          setMetadata(dataUri, mimeMatch?.[1]);
+      // blob: URLs carry no inspectable MIME type from the string alone —
+      // `type` is optional on MediaImage, and browsers render fine without it.
+      getCachedSongThumbnail(currentSong.thumbnailPath)
+        .then((blobUrl) => {
+          if (!blobUrl) return;
+          setMetadata(blobUrl);
         })
         .catch(() => {});
     }
@@ -595,6 +618,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const handleEnded = useCallback(() => {
     skipAttemptsRef.current = 0;
+    if (freshAutoplayCountRef.current >= FRESH_AUTOPLAY_LIMIT && playedIndicesRef.current.size > 0) {
+      // Passive auto-advance budget spent for this queue session — replay
+      // from the already-played (already-cached) subset instead of pulling
+      // further never-downloaded songs from Realtime Database.
+      const played = Array.from(playedIndicesRef.current);
+      const replayIndex = played[Math.floor(Math.random() * played.length)];
+      debugLog("player", `fresh-autoplay limit reached — replaying from ${played.length} cached songs`);
+      goToIndex(queue, replayIndex, true);
+      return;
+    }
+    freshAutoplayCountRef.current += 1;
     goToIndex(queue, queueIndex + 1, true);
   }, [queue, queueIndex, goToIndex]);
 

@@ -3,6 +3,7 @@
 import { get, onValue, ref as dbRef, remove as dbRemove, set as dbSet } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import type { ChatMessage, ChatStep } from "@/types/chat";
+import { debugLog } from "@/lib/firebase/debugLog";
 
 const SESSIONS_PATH = "chatSessions";
 // Resumable for a week, then treated as gone — mirrors the retention
@@ -110,9 +111,14 @@ export function subscribeToChatSession(
   onChange: (state: ChatSessionState | null) => void
 ): () => void {
   if (!sessionId) return () => {};
-  return onValue(dbRef(rtdb, `${SESSIONS_PATH}/${sessionId}`), (snapshot) => {
+  debugLog("chatSessions", `onValue: subscribing to session ${sessionId}`);
+  const unsubscribe = onValue(dbRef(rtdb, `${SESSIONS_PATH}/${sessionId}`), (snapshot) => {
     onChange(parseSessionValue(sessionId, snapshot.val() as RawSessionValue));
   });
+  return () => {
+    debugLog("chatSessions", `onValue: unsubscribing from session ${sessionId}`);
+    unsubscribe();
+  };
 }
 
 export async function saveChatSession(sessionId: string, state: ChatSessionState): Promise<void> {

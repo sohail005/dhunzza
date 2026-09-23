@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { deleteSong as deleteSongRequest, fetchAllSongsOnce } from "@/lib/firebase/songs";
+import { deleteSong as deleteSongRequest } from "@/lib/firebase/songs";
+import { getSongsOnce, removeSongFromCache, upsertSongInCache } from "@/lib/firebase/songsCache";
 import type { Song } from "@/types/music";
 import UploadForm from "@/components/admin/UploadForm";
 import SongTable from "@/components/admin/SongTable";
@@ -39,7 +40,7 @@ export default function AdminDashboardPage() {
     (async () => {
       setIsLoading(true);
       try {
-        const fetchedSongs = await fetchAllSongsOnce();
+        const fetchedSongs = await getSongsOnce();
         setSongs(fetchedSongs);
       } catch {
         showToast("Couldn't load dashboard data — check your connection.", "error");
@@ -50,12 +51,14 @@ export default function AdminDashboardPage() {
   }, [showToast]);
 
   function handleUploaded(song: Song) {
+    upsertSongInCache(song);
     setSongs((prev) => [song, ...prev]);
   }
 
   async function handleDeleteSong(song: Song) {
     try {
       await deleteSongRequest(song.id, song.audioPath, song.thumbnailPath);
+      removeSongFromCache(song.id);
       setSongs((prev) => prev.filter((s) => s.id !== song.id));
       showToast(`"${song.title}" deleted.`, "success");
     } catch {

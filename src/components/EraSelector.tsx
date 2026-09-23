@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Clock, Loader2 } from "lucide-react";
 import { useRadio } from "@/hooks/useRadio";
 import { ERA_BY_ID, ERAS } from "@/lib/eras";
-import { fetchSongCountsByEra } from "@/lib/firebase/songs";
+import { getSongsOnce } from "@/lib/firebase/songsCache";
 import type { EraId } from "@/types/music";
 
 export default function EraSelector({ className = "" }: { className?: string }) {
@@ -15,8 +15,15 @@ export default function EraSelector({ className = "" }: { className?: string }) 
 
   useEffect(() => {
     if (!isOpen || counts) return;
-    fetchSongCountsByEra()
-      .then(setCounts)
+    // Derived from the shared songs cache (already loaded/reused elsewhere)
+    // instead of 5 separate getCountFromServer aggregation queries — the
+    // full list is already in memory once any consumer has loaded it.
+    getSongsOnce()
+      .then((songs) => {
+        const grouped = Object.fromEntries(ERAS.map((era) => [era.id, 0])) as Record<EraId, number>;
+        for (const song of songs) grouped[song.era] += 1;
+        setCounts(grouped);
+      })
       .catch(() => {});
   }, [isOpen, counts]);
 
