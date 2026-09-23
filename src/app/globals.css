@@ -28,6 +28,15 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Song request chat covers the full viewport as a fixed dialog. On mobile
+   browsers where the address bar resizes the visual viewport, 100dvh can
+   momentarily lag behind that, leaving a sliver of real viewport exposed
+   below the dialog — hide the other fixed chrome there so nothing pokes
+   through the gap while the dialog is open. */
+body.song-request-chat-open .site-chrome-stack {
+  display: none;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

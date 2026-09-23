@@ -19,7 +19,7 @@ export default function RootChrome({ children }: { children: React.ReactNode }) 
       <main className={isAdmin ? "min-h-screen" : "min-h-[70vh]"}>{children}</main>
       {!isAdmin && <Footer />}
       {!isAdmin && (
-        <div className="fixed top-20 inset-x-3 z-40 flex flex-col items-stretch gap-3 sm:top-4 sm:inset-x-auto sm:right-4">
+        <div className="site-chrome-stack fixed top-20 inset-x-3 z-40 flex flex-col items-stretch gap-3 sm:top-4 sm:inset-x-auto sm:right-4">
           <MiniPlayer />
           <div className="hidden sm:block">
             <RecentlyAddedNotification />

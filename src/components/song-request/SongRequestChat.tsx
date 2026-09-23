@@ -56,6 +56,16 @@ export default function SongRequestChat({ isOpen, onClose }: SongRequestChatProp
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Mobile browsers resize the visual viewport as their address bar
+  // shows/hides, which can lag behind `100dvh` and leave a sliver of the
+  // real viewport exposed below this fixed-height dialog. The site's other
+  // fixed-position chrome (mini player, notifications) would then poke
+  // through in that gap, so hide it outright while the dialog is open.
+  useEffect(() => {
+    document.body.classList.toggle("song-request-chat-open", isOpen);
+    return () => document.body.classList.remove("song-request-chat-open");
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
