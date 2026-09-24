@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Dosis, Noto_Serif_Devanagari } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { PlayerProvider } from "@/context/PlayerContext";
 import EraBackground from "@/components/EraBackground";
@@ -181,6 +182,7 @@ export default function RootLayout({
           <TimeTravelOverlay />
           <RootChrome>{children}</RootChrome>
         </PlayerProvider>
+        <Analytics />
       </body>
     </html>
   );
