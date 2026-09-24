@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRadio } from "@/hooks/useRadio";
 import { useEraBackground } from "@/hooks/useEraBackground";
-import { useEraPhoto } from "@/hooks/useEraPhoto";
+import { useEraPhoto, type InitialEraPhoto } from "@/hooks/useEraPhoto";
 
 const SONG_CHANGE_DURATION_MS = 900;
 const ERA_CHANGE_DURATION_MS = 1400;
@@ -52,14 +52,14 @@ function FadeInLayer({
  * as visually distinct. Falls back to the gradient alone if photos haven't
  * loaded yet or are unavailable.
  */
-export default function EraBackground() {
+export default function EraBackground({ initialPhoto }: { initialPhoto?: InitialEraPhoto }) {
   const { currentEra, currentSong } = useRadio();
   const { activeVariant, previousVariant, isEraTransition } = useEraBackground(
     currentEra,
     currentSong
   );
   const duration = isEraTransition ? ERA_CHANGE_DURATION_MS : SONG_CHANGE_DURATION_MS;
-  const photoUrl = useEraPhoto(activeVariant.era, currentSong?.id ?? null);
+  const photoUrl = useEraPhoto(activeVariant.era, currentSong?.id ?? null, initialPhoto);
 
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">

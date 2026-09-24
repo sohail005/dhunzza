@@ -5,6 +5,22 @@ import { PlayerProvider } from "@/context/PlayerContext";
 import EraBackground from "@/components/EraBackground";
 import TimeTravelOverlay from "@/components/TimeTravelOverlay";
 import RootChrome from "@/components/RootChrome";
+import { DEFAULT_ERA } from "@/lib/eras";
+import { getEraPhotoPoolSafe } from "@/lib/backgroundPhotosServer";
+import { pickPhotoFromPool } from "@/lib/backgroundPhotos";
+
+// Firebase Realtime Database host, derived from the same env var
+// lib/firebase/config.ts uses — warming this connection ahead of time
+// shaves the DNS/TLS handshake off the RTDB listeners PlayerProvider opens
+// on mount (see the "Use efficient cache lifetimes" / long-poll requests
+// in perf reports).
+const RTDB_ORIGIN = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ?? "").origin;
+  } catch {
+    return null;
+  }
+})();
 
 const dosis = Dosis({
   subsets: ["latin"],
@@ -133,14 +149,34 @@ const jsonLd = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Prefetched server-side (and cached — see backgroundPhotosServer.ts) so
+  // the background photo behind the hero doesn't wait on a client mount ->
+  // fetch /api/backgrounds -> server fetches Pixabay round trip before the
+  // browser even knows which image to request. Deterministic pick (same
+  // seed the client would use on first render, with no song tuned in yet)
+  // so this matches exactly what the client renders — see useEraPhoto.ts.
+  const initialPhotoPool = await getEraPhotoPoolSafe(DEFAULT_ERA);
+  const initialPhoto = {
+    era: DEFAULT_ERA,
+    pool: initialPhotoPool,
+    url: pickPhotoFromPool(initialPhotoPool, DEFAULT_ERA, []),
+  };
+
   return (
     <html lang="hi" className={`${dosis.variable} ${notoSerifDevanagari.variable}`}>
       <head>
+        {/* Warms the connections used immediately on mount — the Firebase
+            Realtime DB listeners PlayerProvider opens and the Pixabay
+            photo EraBackground fetches — so their TLS/DNS handshake
+            doesn't stack on top of the request itself. */}
+        {RTDB_ORIGIN && <link rel="preconnect" href={RTDB_ORIGIN} />}
+        <link rel="preconnect" href="https://pixabay.com" />
+        <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
         {/* Plain <script>, not next/script — AdSense's head-tag validator
             rejects the `data-nscript` attribute next/script's <Script>
             component stamps on every tag it renders. */}
@@ -157,7 +193,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <PlayerProvider>
-          <EraBackground />
+          <EraBackground initialPhoto={initialPhoto} />
           <TimeTravelOverlay />
           <RootChrome>{children}</RootChrome>
         </PlayerProvider>

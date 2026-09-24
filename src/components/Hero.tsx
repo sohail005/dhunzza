@@ -1,16 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { HelpCircle, Heart, Info, MessageCircle, Menu, X } from "lucide-react";
 import { formatISTClock } from "@/lib/time";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
 import { useLiveChatUnread } from "@/hooks/useLiveChatUnread";
 import SupportModal from "@/components/SupportModal";
-import SongRequestChat from "@/components/song-request/SongRequestChat";
 import InstallAppButton from "@/components/InstallAppButton";
 import RadioPlayer from "@/components/player/RadioPlayer";
 import Image from "next/image";
 import RecentlyAddedNotification from "@/components/player/RecentlyAddedNotification";
+
+// Pulls in motion/react + chat sub-components — sizable, and not needed
+// until someone actually opens Live Chat, so it's kept out of the initial
+// JS bundle every visitor otherwise pays for on page load.
+const SongRequestChat = dynamic(() => import("@/components/song-request/SongRequestChat"));
 
 const DEFAULT_OVERLAY = "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.8) 100%)";
 

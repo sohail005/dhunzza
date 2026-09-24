@@ -2,20 +2,40 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { EraId } from "@/types/music";
-import { fetchEraPhotoPool, pickPhotoFromPool } from "@/lib/backgroundPhotos";
+import { fetchEraPhotoPool, pickPhotoFromPool, seedEraPhotoPool } from "@/lib/backgroundPhotos";
 
 const HISTORY_SIZE = 3;
+
+export interface InitialEraPhoto {
+  era: EraId;
+  pool: string[];
+  url: string | null;
+}
 
 /**
  * Fetches the real-photo pool for an era (via /api/backgrounds, our
  * server-side Pixabay proxy) and deterministically picks one per song,
  * avoiding recent repeats. Returns null while loading or if photos are
  * unavailable — callers should fall back to the gradient-only look.
+ *
+ * `initial` lets the caller seed the very first render with a pool (and
+ * picked URL) the server already fetched, so the first paint doesn't have
+ * to wait on a client-side fetch chain — see EraBackground.tsx/layout.tsx.
+ * It's only useful on the initial mount (same as a lazy useState default);
+ * era/songId changes after that always go through the normal fetch path.
  */
-export function useEraPhoto(era: EraId, songId: string | null): string | null {
-  const [pool, setPool] = useState<string[]>([]);
+export function useEraPhoto(era: EraId, songId: string | null, initial?: InitialEraPhoto): string | null {
+  const [pool, setPool] = useState<string[]>(() => {
+    if (initial && initial.era === era && initial.pool.length > 0) {
+      seedEraPhotoPool(initial.era, initial.pool);
+      return initial.pool;
+    }
+    return [];
+  });
   const [history, setHistory] = useState<string[]>([]);
-  const [activeUrl, setActiveUrl] = useState<string | null>(null);
+  const [activeUrl, setActiveUrl] = useState<string | null>(() =>
+    initial && initial.era === era ? initial.url : null
+  );
 
   useEffect(() => {
     let cancelled = false;
