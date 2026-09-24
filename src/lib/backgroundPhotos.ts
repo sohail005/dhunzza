@@ -5,15 +5,6 @@ import type { EraId } from "@/types/music";
 const poolCache = new Map<EraId, string[]>();
 const inFlight = new Map<EraId, Promise<string[]>>();
 
-/**
- * Seeds the client cache from a pool the server already fetched (see
- * layout.tsx, which prefetches the default era so the very first background
- * photo doesn't wait on a client round trip through /api/backgrounds).
- */
-export function seedEraPhotoPool(era: EraId, urls: string[]): void {
-  if (urls.length > 0 && !poolCache.has(era)) poolCache.set(era, urls);
-}
-
 /** Fetches (and caches) the pool of real photo URLs for an era, via our server-side Pixabay proxy. */
 export async function fetchEraPhotoPool(era: EraId): Promise<string[]> {
   const cached = poolCache.get(era);

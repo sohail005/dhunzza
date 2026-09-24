@@ -5,9 +5,6 @@ import { PlayerProvider } from "@/context/PlayerContext";
 import EraBackground from "@/components/EraBackground";
 import TimeTravelOverlay from "@/components/TimeTravelOverlay";
 import RootChrome from "@/components/RootChrome";
-import { DEFAULT_ERA } from "@/lib/eras";
-import { getEraPhotoPoolSafe } from "@/lib/backgroundPhotosServer";
-import { pickPhotoFromPool } from "@/lib/backgroundPhotos";
 
 // Firebase Realtime Database host, derived from the same env var
 // lib/firebase/config.ts uses — warming this connection ahead of time
@@ -149,24 +146,11 @@ const jsonLd = {
   ],
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Prefetched server-side (and cached — see backgroundPhotosServer.ts) so
-  // the background photo behind the hero doesn't wait on a client mount ->
-  // fetch /api/backgrounds -> server fetches Pixabay round trip before the
-  // browser even knows which image to request. Deterministic pick (same
-  // seed the client would use on first render, with no song tuned in yet)
-  // so this matches exactly what the client renders — see useEraPhoto.ts.
-  const initialPhotoPool = await getEraPhotoPoolSafe(DEFAULT_ERA);
-  const initialPhoto = {
-    era: DEFAULT_ERA,
-    pool: initialPhotoPool,
-    url: pickPhotoFromPool(initialPhotoPool, DEFAULT_ERA, []),
-  };
-
   return (
     <html lang="hi" className={`${dosis.variable} ${notoSerifDevanagari.variable}`}>
       <head>
@@ -193,7 +177,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <PlayerProvider>
-          <EraBackground initialPhoto={initialPhoto} />
+          <EraBackground />
           <TimeTravelOverlay />
           <RootChrome>{children}</RootChrome>
         </PlayerProvider>
